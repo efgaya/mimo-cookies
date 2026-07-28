@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#6d3d2f">
+  <meta name="description" content="Cookies artesanais da Mimo Cookies. Monte seu pedido e envie pelo WhatsApp.">
+  <title>Mimo Cookies — Cookies artesanais</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/png" href="assets/images/logo.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero" id="inicio">
+    <nav class="nav shell">
+      <a class="brand" href="#inicio" aria-label="Mimo Cookies, início">
+        <img class="brand-logo" src="assets/images/logo.png" alt="Logo da Mimo Cookies">
+      </a>
+      <a class="instagram" href="https://www.instagram.com/mimocookiess/" target="_blank" rel="noopener">
+        @mimocookiess
+      </a>
+    </nav>
+
+    <div class="hero-content shell">
+      <div class="hero-copy">
+        <p class="eyebrow">1ª cookieteria de Santarém</p>
+        <h1>Cookies que parecem abraço em forma de doce.</h1>
+        <p class="hero-text">
+          Cookies artesanais assados na hora. Escolha seus sabores favoritos, monte seu pedido e finalize direto pelo WhatsApp.
+          Funcionamos todos os dias, das 9h às 21h.
+        </p>
+        <div class="hero-actions">
+          <a class="primary-button" href="#cardapio">Ver cardápio</a>
+          <a class="ghost-button" href="https://www.instagram.com/mimocookiess/" target="_blank" rel="noopener">Ver Instagram</a>
+        </div>
+        <ul class="hero-highlights">
+          <li>🍪 Artesanais e assados na hora</li>
+          <li>🕘 Funcionamento: 9h às 21h</li>
+          <li>📍 Retirada no Gran Ville</li>
+          <li>💬 Pedido pelo WhatsApp</li>
+        </ul>
+      </div>
+
+      <div class="hero-visual">
+        <div class="hero-card hero-card-main">
+          <img src="assets/images/kitkat.webp" alt="Cookie de KitKat da Mimo Cookies">
+        </div>
+        <div class="hero-card hero-card-small top-card">
+          <img src="assets/images/biscoff.webp" alt="Cookie sabor Biscoff da Mimo Cookies">
+        </div>
+        <div class="hero-card hero-card-small bottom-card">
+          <img src="assets/images/red-velvet.webp" alt="Cookie Red Velvet da Mimo Cookies">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="section shell" id="cardapio">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Nosso cardápio</p>
+          <h2>Escolha seus favoritos</h2>
+        </div>
+        <p>Adicione ao carrinho e envie o pedido pronto para o WhatsApp da loja.</p>
+      </div>
+
+      <div class="product-grid" id="product-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="pickup-section">
+      <div class="shell pickup-card">
+        <div>
+          <p class="eyebrow">Como receber</p>
+          <h2>Retirada ou entrega</h2>
+          <p>
+            Retirada na <strong>Av. Frei Vicente, 485 — Aeroporto Velho,
+            Residencial Gran Ville</strong>.
+          </p>
+          <p class="muted">
+            <strong>Funcionamento: das 9h às 21h.</strong> Os cookies são artesanais e assados na hora.
+          </p>
+          <p class="muted">
+            Entrega ainda será definida. Por enquanto, o pedido pode ser enviado normalmente e o frete será confirmado pelo WhatsApp.
+          </p>
+        </div>
+        <div class="pickup-actions">
+          <a class="secondary-button" href="https://maps.google.com/?q=Av.%20Frei%20Vicente%2C%20485%20Aeroporto%20Velho" target="_blank" rel="noopener">
+            Ver localização
+          </a>
+          <a class="secondary-button alt" href="https://wa.me/559391985864" target="_blank" rel="noopener">
+            Falar no WhatsApp
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <button class="cart-fab" id="cart-fab" type="button" aria-controls="cart-panel" aria-expanded="false">
+    <span>Seu pedido</span>
+    <strong id="cart-fab-summary">0 itens · R$ 0,00</strong>
+  </button>
+
+  <div class="overlay" id="overlay" hidden></div>
+
+  <aside class="cart-panel" id="cart-panel" aria-labelledby="cart-title" aria-hidden="true">
+    <div class="cart-header">
+      <div>
+        <p class="eyebrow">Carrinho</p>
+        <h2 id="cart-title">Seu pedido</h2>
+      </div>
+      <button class="icon-button" id="close-cart" type="button" aria-label="Fechar carrinho">×</button>
+    </div>
+
+    <div class="cart-items" id="cart-items"></div>
+
+    <form class="checkout-form" id="checkout-form">
+      <fieldset>
+        <legend>Como deseja receber?</legend>
+        <label class="choice">
+          <input type="radio" name="delivery" value="Retirada" checked>
+          <span>
+            <strong>Retirada</strong>
+            <small>Av. Frei Vicente, 485</small>
+          </span>
+          <b>Grátis</b>
+        </label>
+        <label class="choice">
+          <input type="radio" name="delivery" value="Entrega">
+          <span>
+            <strong>Entrega</strong>
+            <small>Frete confirmado no WhatsApp</small>
+          </span>
+          <b>A calcular</b>
+        </label>
+      </fieldset>
+
+      <label>
+        Seu nome
+        <input id="customer-name" type="text" placeholder="Como podemos chamar você?" required>
+      </label>
+
+      <div id="address-fields" hidden>
+        <label>
+          Endereço de entrega
+          <input id="customer-address" type="text" placeholder="Rua, número, bairro e complemento">
+        </label>
+      </div>
+
+      <label>
+        Observações
+        <textarea id="customer-notes" rows="3" placeholder="Ex.: horário preferido, sem cobertura, pedido para presente..."></textarea>
+      </label>
+
+      <div class="totals">
+        <div><span>Produtos</span><strong id="subtotal">R$ 0,00</strong></div>
+        <div><span>Entrega</span><strong id="shipping">Grátis</strong></div>
+        <div class="grand-total"><span>Total parcial</span><strong id="total">R$ 0,00</strong></div>
+      </div>
+
+      <button class="whatsapp-button" id="whatsapp-button" type="submit">
+        Pedir pelo WhatsApp
+      </button>
+      <p class="form-note">
+        O pedido só é confirmado após a resposta da Mimo Cookies.
+      </p>
+    </form>
+  </aside>
+
+  <footer>
+    <div class="shell footer-content">
+      <div class="footer-brand-wrap">
+        <img class="footer-logo" src="assets/images/logo.png" alt="Logo da Mimo Cookies">
+        <p>1ª cookieteria de Santarém — cookies artesanais assados na hora.</p>
+      </div>
+      <a href="https://www.instagram.com/mimocookiess/" target="_blank" rel="noopener">@mimocookiess</a>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="products.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
