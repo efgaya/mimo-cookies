@@ -1,6 +1,20 @@
 const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
 const cart = new Map();
 
+const PRODUCT_EMOJIS = {
+  tradicional: String.fromCodePoint(0x1F90E),          // 🤎
+  chocolatudo: String.fromCodePoint(0x1F36B),          // 🍫
+  "caramelo-salgado": String.fromCodePoint(0x1F36F),   // 🍯
+  kitkat: String.fromCodePoint(0x1F36B),               // 🍫
+  biscoff: String.fromCodePoint(0x1F950),               // 🥐
+  "red-velvet": String.fromCodePoint(0x2764, 0xFE0F)    // ❤️
+};
+
+const greetingEmojis = String.fromCodePoint(
+  0x1F36A, // 🍪
+  0x1F497  // 💗
+);
+
 const grid = document.querySelector("#product-grid");
 const cartFab = document.querySelector("#cart-fab");
 const cartFabSummary = document.querySelector("#cart-fab-summary");
@@ -155,13 +169,14 @@ form.addEventListener("submit", event => {
   const subtotal = calculateSubtotal();
 
   const lines = [
-    `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} \u{1F36A}`,
+    `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} ${greetingEmojis}`,
     "",
     "*Pedido:*",
     ...[...cart.entries()].map(([id, qty]) => {
-      const product = getProduct(id);
-      return `${qty}x ${product.name} — ${BRL.format(product.price * qty)}`;
-    }),
+  const product = getProduct(id);
+  const emoji = PRODUCT_EMOJIS[id] || "";
+  return `${emoji} ${qty}x ${product.name} — ${BRL.format(product.price * qty)}`;
+  }),
     "",
     `*Produtos:* ${BRL.format(subtotal)}`,
     `*Recebimento:* ${delivery}`,
