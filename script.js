@@ -155,7 +155,7 @@ form.addEventListener("submit", event => {
   const subtotal = calculateSubtotal();
 
   const lines = [
-    `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} 🍪`,
+    `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} \u{1F36A}`,
     "",
     "*Pedido:*",
     ...[...cart.entries()].map(([id, qty]) => {
