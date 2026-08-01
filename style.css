@@ -444,7 +444,7 @@ input[type="text"]:focus, textarea:focus {
 }
 
 footer {
-  padding: 68px 0 110px;
+  padding: 68px 0 150px;
   background: var(--brown-dark);
   color: white;
 }
