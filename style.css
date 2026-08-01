@@ -469,17 +469,15 @@ footer p { color: rgba(255,255,255,.75); margin: 0; }
 footer a { font-weight: 700; }
 
 .footer-bottom {
-  margin-top: 24px;
-  padding-top: 18px;
-  padding-bottom: 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  margin-top: 36px;
+  padding: 22px 0 28px;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
   text-align: center;
-  font-size: 0.85rem;
-  opacity: 0.8;
+  font-size: 0.78rem;
 }
 
 .footer-bottom p {
-  margin: 0;
+  color: rgba(255, 255, 255, 0.58);
 }
 
 @media (max-width: 960px) {
