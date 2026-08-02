@@ -16,7 +16,7 @@
     rel="stylesheet"
   >
 
-  <link rel="stylesheet" href="admin.css?v=4">
+  <link rel="stylesheet" href="admin.css?v=5">
 </head>
 
 <body>
@@ -212,9 +212,28 @@
                 id="product-image"
                 type="text"
                 placeholder="assets/images/pistache.webp"
-                required
               >
+              <small>
+                Mantenha a URL atual ou escolha uma nova imagem abaixo.
+              </small>
             </label>
+
+            <label>
+              Enviar nova imagem
+              <input
+                id="product-image-file"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+              >
+              <small>
+                JPEG, PNG ou WebP, com no máximo 5 MB.
+              </small>
+            </label>
+
+            <div class="image-preview" id="product-image-preview-wrap" hidden>
+              <span>Prévia da imagem</span>
+              <img id="product-image-preview" alt="Prévia da imagem do produto">
+            </div>
 
             <label>
               Estoque
@@ -319,6 +338,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=1"></script>
-  <script src="admin.js?v=4"></script>
+  <script src="admin.js?v=5"></script>
 </body>
 </html>
