@@ -8,6 +8,10 @@ let PRODUCTS = [];
 let isSubmitting = false;
 let lastRegisteredSignature = null;
 let lastWhatsAppUrl = null;
+let turnstileToken = null;
+let turnstileWidgetId = null;
+
+const TURNSTILE_ACTION = "create_order";
 
 const PRODUCT_EMOJIS = {
   tradicional: String.fromCodePoint(0x1F90E),
@@ -23,6 +27,32 @@ const greetingEmojis = String.fromCodePoint(
   0x1F497
 );
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+function getSafeImageSource(value) {
+  const source = String(value ?? "").trim();
+
+  if (!source) return "";
+
+  try {
+    const url = new URL(source, window.location.href);
+
+    return ["http:", "https:"].includes(url.protocol)
+      ? escapeHtml(source)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 const grid = document.querySelector("#product-grid");
 const cartFab = document.querySelector("#cart-fab");
 const cartFabSummary = document.querySelector("#cart-fab-summary");
@@ -37,6 +67,135 @@ const form = document.querySelector("#checkout-form");
 const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
 const whatsappButton = document.querySelector("#whatsapp-button");
+const turnstileMessage = document.querySelector("#turnstile-message");
+
+function setTurnstileMessage(text, type = "") {
+  turnstileMessage.textContent = text;
+  turnstileMessage.className = "turnstile-message";
+
+  if (type) {
+    turnstileMessage.classList.add(type);
+  }
+}
+
+function handleTurnstileUnavailable() {
+  turnstileToken = null;
+  setTurnstileMessage(
+    "Não foi possível carregar a verificação de segurança.",
+    "error"
+  );
+  refreshWhatsappButton();
+}
+
+function initializeTurnstile() {
+  if (turnstileWidgetId !== null) return;
+
+  const siteKey =
+    String(STORE_CONFIG.turnstileSiteKey || "").trim();
+
+  if (!siteKey) {
+    setTurnstileMessage(
+      "A verificação de segurança ainda não foi configurada.",
+      "error"
+    );
+    refreshWhatsappButton();
+    return;
+  }
+
+  if (!window.turnstile) {
+    handleTurnstileUnavailable();
+    return;
+  }
+
+  turnstileWidgetId = window.turnstile.render(
+    "#turnstile-widget",
+    {
+      sitekey: siteKey,
+      action: TURNSTILE_ACTION,
+      size: window.matchMedia("(max-width: 370px)").matches
+        ? "compact"
+        : "flexible",
+      callback: token => {
+        turnstileToken = token;
+        setTurnstileMessage(
+          "Verificação concluída.",
+          "success"
+        );
+        refreshWhatsappButton();
+      },
+      "expired-callback": () => {
+        turnstileToken = null;
+        setTurnstileMessage(
+          "A verificação expirou. Tente novamente.",
+          "error"
+        );
+        refreshWhatsappButton();
+      },
+      "timeout-callback": () => {
+        turnstileToken = null;
+        setTurnstileMessage(
+          "A verificação expirou. Tente novamente.",
+          "error"
+        );
+        refreshWhatsappButton();
+      },
+      "error-callback": () => {
+        handleTurnstileUnavailable();
+      }
+    }
+  );
+}
+
+function resetTurnstile() {
+  turnstileToken = null;
+
+  if (
+    window.turnstile &&
+    turnstileWidgetId !== null
+  ) {
+    window.turnstile.reset(turnstileWidgetId);
+    setTurnstileMessage("Faça uma nova verificação.");
+  }
+}
+
+async function getEdgeFunctionErrorMessage(error) {
+  try {
+    if (error?.context instanceof Response) {
+      const payload = await error.context.clone().json();
+
+      if (payload?.error) {
+        return payload.error;
+      }
+    }
+  } catch {
+    // Usa a mensagem genérica abaixo.
+  }
+
+  return error?.message ||
+    "Não foi possível registrar o pedido. Tente novamente.";
+}
+
+function loadTurnstileApi() {
+  if (!String(STORE_CONFIG.turnstileSiteKey || "").trim()) {
+    setTurnstileMessage(
+      "A verificação de segurança ainda não foi configurada.",
+      "error"
+    );
+    refreshWhatsappButton();
+    return;
+  }
+
+  const script = document.createElement("script");
+
+  script.src =
+    "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+  script.async = true;
+  script.defer = true;
+  script.addEventListener("load", initializeTurnstile);
+  script.addEventListener("error", handleTurnstileUnavailable);
+
+  document.head.append(script);
+}
 
 function getCurrentOrderSignature() {
   const cartItemsSignature = [...cart.entries()]
@@ -95,11 +254,20 @@ function refreshWhatsappButton() {
     return;
   }
 
-  whatsappButton.disabled = false;
+  if (sameRegisteredOrder) {
+    whatsappButton.disabled = false;
+    whatsappButton.textContent = "Abrir WhatsApp novamente";
+    return;
+  }
 
-  whatsappButton.textContent = sameRegisteredOrder
-    ? "Abrir WhatsApp novamente"
-    : "Pedir pelo WhatsApp";
+  if (!turnstileToken) {
+    whatsappButton.disabled = true;
+    whatsappButton.textContent = "Conclua a verificação";
+    return;
+  }
+
+  whatsappButton.disabled = false;
+  whatsappButton.textContent = "Pedir pelo WhatsApp";
 }
 
 async function loadProducts() {
@@ -183,14 +351,16 @@ function getProductStatus(product) {
 function renderProducts() {
   grid.innerHTML = PRODUCTS.map(product => {
     const status = getProductStatus(product);
+    const productId = escapeHtml(product.id);
+    const productName = escapeHtml(product.name);
 
     return `
       <article class="product-card">
         <div class="product-image-wrap">
           <img
             class="product-image"
-            src="${product.image}"
-            alt="${product.name}"
+            src="${getSafeImageSource(product.image)}"
+            alt="${productName}"
             loading="lazy"
           >
 
@@ -201,16 +371,16 @@ function renderProducts() {
 
         <div class="product-body">
           <div class="product-title-row">
-            <h3>${product.name}</h3>
+            <h3>${productName}</h3>
             <span class="price">${BRL.format(product.price)}</span>
           </div>
 
-          <p>${product.description}</p>
+          <p>${escapeHtml(product.description)}</p>
 
           <button
             class="add-button"
             type="button"
-            data-add="${product.id}"
+            data-add="${productId}"
             ${product.available ? "" : "disabled"}
           >
             ${product.available
@@ -325,12 +495,14 @@ function updateCart() {
 
       if (!product) return "";
 
+      const productId = escapeHtml(id);
+
       return `
         <div class="cart-item">
-          <img src="${product.image}" alt="">
+          <img src="${getSafeImageSource(product.image)}" alt="">
 
           <div>
-            <h4>${product.name}</h4>
+            <h4>${escapeHtml(product.name)}</h4>
             <small>
               ${BRL.format(product.price * qty)}
             </small>
@@ -339,7 +511,7 @@ function updateCart() {
           <div class="quantity">
             <button
               type="button"
-              data-change="${id}"
+              data-change="${productId}"
               data-delta="-1"
               aria-label="Remover uma unidade"
             >
@@ -350,7 +522,7 @@ function updateCart() {
 
             <button
   type="button"
-  data-change="${id}"
+              data-change="${productId}"
   data-delta="1"
   aria-label="Adicionar uma unidade"
   ${
@@ -445,6 +617,11 @@ form.addEventListener("submit", async event => {
     return;
   }
 
+  if (!turnstileToken) {
+    alert("Conclua a verificação de segurança para continuar.");
+    return;
+  }
+
   const whatsapp =
     STORE_CONFIG.whatsappNumber.replace(/\D/g, "");
 
@@ -480,25 +657,46 @@ form.addEventListener("submit", async event => {
     quantity: qty
   }));
 
+  const submissionTurnstileToken = turnstileToken;
+  turnstileToken = null;
+
   isSubmitting = true;
   refreshWhatsappButton();
 
   try {
-    const { data, error } = await supabaseClient.rpc(
-      "create_order",
-      {
-        p_customer_name: name,
-        p_delivery_method: delivery,
-        p_payment_method: payment,
-        p_customer_address:
-          delivery === "Entrega" ? address : "",
-        p_notes: notes,
-        p_items: items
-      }
-    );
+    const functionName =
+      STORE_CONFIG.orderFunctionName || "create-order";
+
+    const { data, error } =
+      await supabaseClient.functions.invoke(
+        functionName,
+        {
+          body: {
+            turnstileToken: submissionTurnstileToken,
+            order: {
+              p_customer_name: name,
+              p_delivery_method: delivery,
+              p_payment_method: payment,
+              p_customer_address:
+                delivery === "Entrega" ? address : "",
+              p_notes: notes,
+              p_items: items
+            }
+          }
+        }
+      );
 
     if (error) {
-      throw error;
+      throw new Error(
+        await getEdgeFunctionErrorMessage(error)
+      );
+    }
+
+    if (!data || data.error) {
+      throw new Error(
+        data?.error ||
+        "A resposta do servidor foi inválida."
+      );
     }
 
     const orderNumber = data.order_number;
@@ -568,6 +766,7 @@ form.addEventListener("submit", async event => {
       "Não foi possível registrar o pedido. Tente novamente."
     );
   } finally {
+    resetTurnstile();
     isSubmitting = false;
     refreshWhatsappButton();
   }
@@ -587,3 +786,4 @@ async function initializeStore() {
 }
 
 initializeStore();
+loadTurnstileApi();

@@ -289,6 +289,21 @@ button:disabled {
   margin-top: 0;
 }
 
+.reports-panel {
+  display: grid;
+  min-height: 280px;
+  place-items: center;
+  text-align: center;
+}
+
+.reports-empty-state {
+  max-width: 420px;
+}
+
+.reports-empty-state h2 {
+  margin-bottom: 10px;
+}
+
 .orders-list {
   display: grid;
   gap: 16px;
@@ -509,6 +524,11 @@ button:disabled {
 }
 
 @media (max-width: 540px) {
+  .admin-tab {
+    padding-inline: 10px;
+    font-size: 14px;
+  }
+
   .login-card,
   .panel {
     padding: 22px;

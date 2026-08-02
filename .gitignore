@@ -1,0 +1,10 @@
+# Segredos e configurações locais
+.env
+.env.*
+!.env.example
+supabase/functions/.env
+supabase/functions/.env.local
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/

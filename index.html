@@ -9,9 +9,10 @@
   <link rel="canonical" href="https://lojamimocookies.com.br/">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://challenges.cloudflare.com">
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="assets/images/logo.png">
-  <link rel="stylesheet" href="style.css?v=1">
+  <link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
   <header class="hero" id="inicio">
@@ -202,6 +203,14 @@
         <div class="grand-total"><span>Total parcial</span><strong id="total">R$ 0,00</strong></div>
       </div>
 
+      <div class="turnstile-section">
+        <strong>Verificação de segurança</strong>
+        <div id="turnstile-widget"></div>
+        <p class="turnstile-message" id="turnstile-message" aria-live="polite">
+          Carregando verificação...
+        </p>
+      </div>
+
       <button class="whatsapp-button" id="whatsapp-button" type="submit">
         Pedir pelo WhatsApp
       </button>
@@ -225,11 +234,11 @@
   </div>
   </footer>
   
-<script src="config.js?v=2"></script>
+<script src="config.js?v=3"></script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=1"></script>
 <script src="products.js?v=4"></script>
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 </body>
 </html>

@@ -1,0 +1,5 @@
+# Substitua pelo Reference ID exibido no painel do Supabase.
+project_id = "gixpumwhnvsetohjsmoj"
+
+[functions.create-order]
+verify_jwt = false
