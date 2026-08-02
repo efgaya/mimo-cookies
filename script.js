@@ -169,22 +169,48 @@ function addItem(id) {
 
   if (!product || !product.available) return;
 
-  cart.set(id, (cart.get(id) || 0) + 1);
+  const currentQuantity = cart.get(id) || 0;
+
+  if (
+    product.stock !== null &&
+    product.stock !== undefined &&
+    currentQuantity >= product.stock
+  ) {
+    alert(`Há apenas ${product.stock} unidade(s) de ${product.name} disponível(is).`);
+    return;
+  }
+
+  cart.set(id, currentQuantity + 1);
 
   updateCart();
   openCart();
 }
 
 function changeQuantity(id, delta) {
+  const product = getProduct(id);
+
+  if (!product) return;
+
   const current = cart.get(id) || 0;
   const next = current + delta;
 
   if (next <= 0) {
     cart.delete(id);
-  } else {
-    cart.set(id, next);
+    updateCart();
+    return;
   }
 
+  if (
+    delta > 0 &&
+    product.stock !== null &&
+    product.stock !== undefined &&
+    next > product.stock
+  ) {
+    alert(`Há apenas ${product.stock} unidade(s) de ${product.name} disponível(is).`);
+    return;
+  }
+
+  cart.set(id, next);
   updateCart();
 }
 
@@ -255,13 +281,20 @@ function updateCart() {
             <strong>${qty}</strong>
 
             <button
-              type="button"
-              data-change="${id}"
-              data-delta="1"
-              aria-label="Adicionar uma unidade"
-            >
-              +
-            </button>
+  type="button"
+  data-change="${id}"
+  data-delta="1"
+  aria-label="Adicionar uma unidade"
+  ${
+    product.stock !== null &&
+    product.stock !== undefined &&
+    qty >= product.stock
+      ? "disabled"
+      : ""
+  }
+>
+  +
+</button>
           </div>
         </div>
       `;
