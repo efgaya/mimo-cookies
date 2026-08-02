@@ -88,43 +88,46 @@ async function loadProducts() {
 }
 
 function renderProducts() {
-  grid.innerHTML = PRODUCTS.map(product => `
-    <article class="product-card">
-      <div class="product-image-wrap">
-        <img
-          class="product-image"
-          src="${product.image}"
-          alt="${product.name}"
-          loading="lazy"
-        >
-        <span class="status-pill">
-          ${product.available ? "Disponível" : "Esgotado"}
-        </span>
-      </div>
+  grid.innerHTML = PRODUCTS.map(product => {
+    const status = getProductStatus(product);
 
-      <div class="product-body">
-        <div class="product-title-row">
-          <h3>${product.name}</h3>
-          <span class="price">
-            ${BRL.format(product.price)}
+    return `
+      <article class="product-card">
+        <div class="product-image-wrap">
+          <img
+            class="product-image"
+            src="${product.image}"
+            alt="${product.name}"
+            loading="lazy"
+          >
+
+          <span class="status-pill ${status.className}">
+            ${status.text}
           </span>
         </div>
 
-        <p>${product.description}</p>
+        <div class="product-body">
+          <div class="product-title-row">
+            <h3>${product.name}</h3>
+            <span class="price">${BRL.format(product.price)}</span>
+          </div>
 
-        <button
-          class="add-button"
-          type="button"
-          data-add="${product.id}"
-          ${product.available ? "" : "disabled"}
-        >
-          ${product.available
-            ? "Adicionar ao pedido"
-            : "Indisponível"}
-        </button>
-      </div>
-    </article>
-  `).join("");
+          <p>${product.description}</p>
+
+          <button
+            class="add-button"
+            type="button"
+            data-add="${product.id}"
+            ${product.available ? "" : "disabled"}
+          >
+            ${product.available
+              ? "Adicionar ao pedido"
+              : "Indisponível"}
+          </button>
+        </div>
+      </article>
+    `;
+  }).join("");
 }
 
 grid.addEventListener("click", event => {
