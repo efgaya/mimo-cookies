@@ -219,12 +219,25 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
   left: 14px;
   padding: 7px 10px;
   border-radius: 999px;
-  color: white;
-  background: rgba(31, 139, 76, .95);
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: .08em;
+}
+
+.status-pill.status-available {
+  background: rgba(31, 139, 76, .95);
+  color: white;
+}
+
+.status-pill.status-low-stock {
+  background: #e5a522;
+  color: #3f251c;
+}
+
+.status-pill.status-sold-out {
+  background: #c6423a;
+  color: white;
 }
 .product-body { padding: 18px; }
 .product-title-row {
@@ -262,7 +275,17 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
   font-weight: 800;
   cursor: pointer;
 }
-.add-button:active { transform: scale(.98); }
+
+.add-button:disabled {
+  background: #8f8a87;
+  color: white;
+  cursor: not-allowed;
+  opacity: .82;
+}
+
+.add-button:not(:disabled):active {
+  transform: scale(.98);
+}
 
 .pickup-section { padding: 0 0 98px; }
 .pickup-card {
