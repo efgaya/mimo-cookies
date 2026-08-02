@@ -16,7 +16,7 @@
     rel="stylesheet"
   >
 
-  <link rel="stylesheet" href="admin.css?v=3">
+  <link rel="stylesheet" href="admin.css?v=4">
 </head>
 
 <body>
@@ -63,7 +63,7 @@
       <header class="dashboard-header">
         <div>
           <p class="eyebrow">Mimo Cookies</p>
-          <h1>Gerenciar cardápio</h1>
+          <h1>Painel administrativo</h1>
           <p class="muted" id="admin-email"></p>
         </div>
 
@@ -78,28 +78,52 @@
         </div>
       </header>
 
-      <nav class="admin-tabs" aria-label="Seções do painel">
-  <button
-    class="admin-tab active"
-    type="button"
-    data-tab="products"
-  >
-    Produtos
-  </button>
+      <nav class="admin-tabs" aria-label="Seções do painel" role="tablist">
+        <button
+          class="admin-tab active"
+          id="orders-tab"
+          type="button"
+          role="tab"
+          aria-controls="orders-panel"
+          aria-selected="true"
+          data-tab="orders"
+        >
+          Pedidos
+        </button>
 
-  <button
-    class="admin-tab"
-    type="button"
-    data-tab="orders"
-  >
-    Pedidos
-  </button>
-</nav>
+        <button
+          class="admin-tab"
+          id="products-tab"
+          type="button"
+          role="tab"
+          aria-controls="products-panel"
+          aria-selected="false"
+          data-tab="products"
+        >
+          Produtos
+        </button>
+
+        <button
+          class="admin-tab"
+          id="reports-tab"
+          type="button"
+          role="tab"
+          aria-controls="reports-panel"
+          aria-selected="false"
+          data-tab="reports"
+        >
+          Relatórios
+        </button>
+      </nav>
 
       <section
-  class="tab-panel active"
-  data-panel="products"
->
+        class="tab-panel"
+        id="products-panel"
+        role="tabpanel"
+        aria-labelledby="products-tab"
+        data-panel="products"
+        hidden
+      >
 
       <div class="dashboard-grid">
 
@@ -241,10 +265,12 @@
         </section>
 
       <section
-  class="tab-panel"
-  data-panel="orders"
-  hidden
->
+        class="tab-panel active"
+        id="orders-panel"
+        role="tabpanel"
+        aria-labelledby="orders-tab"
+        data-panel="orders"
+      >
       
       <section class="panel orders-panel">
   <div class="panel-heading">
@@ -267,6 +293,25 @@
   </div>
 </section>
         </section>
+
+      <section
+        class="tab-panel"
+        id="reports-panel"
+        role="tabpanel"
+        aria-labelledby="reports-tab"
+        data-panel="reports"
+        hidden
+      >
+        <section class="panel reports-panel">
+          <div class="reports-empty-state">
+            <p class="eyebrow">Relatórios</p>
+            <h2>Em breve</h2>
+            <p class="muted">
+              Os relatórios da loja estarão disponíveis aqui.
+            </p>
+          </div>
+        </section>
+      </section>
       
     </section>
 
@@ -274,6 +319,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=1"></script>
-  <script src="admin.js?v=3"></script>
+  <script src="admin.js?v=4"></script>
 </body>
 </html>

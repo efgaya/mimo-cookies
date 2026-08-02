@@ -781,9 +781,13 @@ tabButtons.forEach(button => {
     const selectedTab = button.dataset.tab;
 
     tabButtons.forEach(tabButton => {
-      tabButton.classList.toggle(
-        "active",
-        tabButton.dataset.tab === selectedTab
+      const isSelected =
+        tabButton.dataset.tab === selectedTab;
+
+      tabButton.classList.toggle("active", isSelected);
+      tabButton.setAttribute(
+        "aria-selected",
+        String(isSelected)
       );
     });
 
