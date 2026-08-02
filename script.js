@@ -87,6 +87,32 @@ async function loadProducts() {
   }
 }
 
+function getProductStatus(product) {
+  if (!product.available || product.stock === 0) {
+    return {
+      text: "Esgotado",
+      className: "status-sold-out"
+    };
+  }
+
+  if (
+    product.stock !== null &&
+    product.stock !== undefined &&
+    product.stock >= 1 &&
+    product.stock <= 3
+  ) {
+    return {
+      text: "Últimas unidades",
+      className: "status-low-stock"
+    };
+  }
+
+  return {
+    text: "Disponível",
+    className: "status-available"
+  };
+}
+
 function renderProducts() {
   grid.innerHTML = PRODUCTS.map(product => {
     const status = getProductStatus(product);
