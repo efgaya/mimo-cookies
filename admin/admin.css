@@ -119,6 +119,45 @@ textarea {
   resize: vertical;
 }
 
+input[type="file"] {
+  padding: 10px;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--pink);
+  color: var(--brown-dark);
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.image-preview {
+  display: grid;
+  gap: 8px;
+}
+
+.image-preview[hidden] {
+  display: none;
+}
+
+.image-preview span {
+  color: var(--brown-dark);
+  font-weight: 600;
+}
+
+.image-preview img {
+  width: min(100%, 280px);
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--cream);
+  object-fit: cover;
+}
+
 button {
   border: 0;
   border-radius: 12px;
