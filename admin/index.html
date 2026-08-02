@@ -78,6 +78,29 @@
         </div>
       </header>
 
+      <nav class="admin-tabs" aria-label="Seções do painel">
+  <button
+    class="admin-tab active"
+    type="button"
+    data-tab="products"
+  >
+    Produtos
+  </button>
+
+  <button
+    class="admin-tab"
+    type="button"
+    data-tab="orders"
+  >
+    Pedidos
+  </button>
+</nav>
+
+      <section
+  class="tab-panel active"
+  data-panel="products"
+>
+
       <div class="dashboard-grid">
 
         <section class="panel form-panel">
@@ -215,7 +238,14 @@
         </section>
 
       </div>
+        </section>
 
+      <section
+  class="tab-panel"
+  data-panel="orders"
+  hidden
+>
+      
       <section class="panel orders-panel">
   <div class="panel-heading">
     <div>
@@ -236,6 +266,7 @@
     <p class="muted">Carregando pedidos...</p>
   </div>
 </section>
+        </section>
       
     </section>
 
