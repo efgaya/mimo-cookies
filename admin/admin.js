@@ -36,7 +36,12 @@ const cancelEditButton = document.querySelector("#cancel-edit-button");
 const productsList = document.querySelector("#products-list");
 const refreshButton = document.querySelector("#refresh-button");
 
+const ordersList = document.querySelector("#orders-list");
+const refreshOrdersButton =
+  document.querySelector("#refresh-orders-button");
+
 let products = [];
+let orders = [];
 
 function setMessage(element, text = "", type = "") {
   element.textContent = text;
@@ -91,7 +96,11 @@ async function verifyAdmin() {
   }
 
   showDashboard(user);
-  await loadProducts();
+
+  await Promise.all([
+    loadProducts(),
+    loadOrders()
+]);
 }
 
 loginForm.addEventListener("submit", async event => {
@@ -134,7 +143,11 @@ loginForm.addEventListener("submit", async event => {
 
   loginPassword.value = "";
   showDashboard(data.user);
-  await loadProducts();
+
+  await Promise.all([
+    loadProducts(),
+    loadOrders()
+]);
 });
 
 logoutButton.addEventListener("click", async () => {
@@ -232,6 +245,222 @@ function renderProducts() {
       </div>
     </article>
   `).join("");
+}
+
+const ORDER_STATUS_LABELS = {
+  new: "Novo",
+  confirmed: "Confirmado",
+  preparing: "Em preparo",
+  ready: "Pronto",
+  completed: "Concluído",
+  cancelled: "Cancelado"
+};
+
+const PAYMENT_STATUS_LABELS = {
+  pending: "Pendente",
+  paid: "Pago",
+  refunded: "Estornado",
+  cancelled: "Cancelado"
+};
+
+function formatDate(dateValue) {
+  if (!dateValue) return "—";
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  }).format(new Date(dateValue));
+}
+
+async function loadOrders() {
+  ordersList.innerHTML =
+    '<p class="muted">Carregando pedidos...</p>';
+
+  const { data, error } = await supabaseClient
+    .from("orders")
+    .select(`
+      id,
+      order_number,
+      customer_name,
+      delivery_method,
+      customer_address,
+      payment_method,
+      payment_status,
+      notes,
+      subtotal,
+      delivery_fee,
+      total,
+      status,
+      created_at,
+      confirmed_at,
+      cancelled_at,
+      order_items (
+        id,
+        product_slug,
+        product_name,
+        unit_price,
+        quantity,
+        line_total
+      )
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+
+    ordersList.innerHTML = `
+      <p class="message error">
+        Não foi possível carregar os pedidos.
+      </p>
+    `;
+
+    return;
+  }
+
+  orders = data || [];
+  renderOrders();
+}
+
+function renderOrders() {
+  if (!orders.length) {
+    ordersList.innerHTML = `
+      <p class="muted">
+        Nenhum pedido registrado.
+      </p>
+    `;
+    return;
+  }
+
+  ordersList.innerHTML = orders.map(order => {
+    const items = order.order_items || [];
+
+    const itemsHtml = items.map(item => `
+      <div class="order-item-line">
+        <span>
+          ${item.quantity}x ${item.product_name}
+        </span>
+
+        <strong>
+          ${BRL.format(Number(item.line_total))}
+        </strong>
+      </div>
+    `).join("");
+
+    const canConfirm = order.status === "new";
+
+    const canCancel = ![
+      "cancelled",
+      "completed"
+    ].includes(order.status);
+
+    return `
+      <article class="order-card ${order.status}">
+        <div class="order-header">
+          <div>
+            <h3>
+              Pedido nº ${order.order_number}
+              — ${order.customer_name}
+            </h3>
+
+            <p>
+              Registrado em ${formatDate(order.created_at)}
+            </p>
+          </div>
+
+          <span class="order-status ${order.status}">
+            ${ORDER_STATUS_LABELS[order.status] || order.status}
+          </span>
+        </div>
+
+        <div class="order-details">
+          <div class="order-detail">
+            <small>Recebimento</small>
+            <strong>${order.delivery_method}</strong>
+          </div>
+
+          <div class="order-detail">
+            <small>Pagamento</small>
+            <strong>${order.payment_method}</strong>
+          </div>
+
+          <div class="order-detail">
+            <small>Situação do pagamento</small>
+            <strong>
+              ${PAYMENT_STATUS_LABELS[order.payment_status]
+                || order.payment_status}
+            </strong>
+          </div>
+
+          <div class="order-detail">
+            <small>Total dos produtos</small>
+            <strong>${BRL.format(Number(order.subtotal))}</strong>
+          </div>
+        </div>
+
+        ${
+          order.delivery_method === "Entrega"
+            ? `
+              <div class="order-notes">
+                <strong>Endereço:</strong>
+                ${order.customer_address || "Não informado"}
+              </div>
+            `
+            : ""
+        }
+
+        ${
+          order.notes
+            ? `
+              <div class="order-notes">
+                <strong>Observações:</strong>
+                ${order.notes}
+              </div>
+            `
+            : ""
+        }
+
+        <div class="order-items">
+          ${itemsHtml}
+        </div>
+
+        ${
+          canConfirm || canCancel
+            ? `
+              <div class="order-actions">
+                ${
+                  canConfirm
+                    ? `
+                      <button
+                        class="confirm-order-button"
+                        type="button"
+                        data-confirm-order="${order.id}"
+                      >
+                        Confirmar e baixar estoque
+                      </button>
+                    `
+                    : ""
+                }
+
+                ${
+                  canCancel
+                    ? `
+                      <button
+                        class="cancel-order-button"
+                        type="button"
+                        data-cancel-order="${order.id}"
+                      >
+                        Cancelar pedido
+                      </button>
+                    `
+                    : ""
+                }
+              </div>
+            `
+            : ""
+        }
+      </article>
+    `;
+  }).join("");
 }
 
 productForm.addEventListener("submit", async event => {
@@ -404,5 +633,84 @@ supabaseClient.auth.onAuthStateChange(event => {
     showLogin();
   }
 });
+
+ordersList.addEventListener("click", async event => {
+  const confirmButton =
+    event.target.closest("[data-confirm-order]");
+
+  const cancelButton =
+    event.target.closest("[data-cancel-order]");
+
+  if (confirmButton) {
+    await confirmOrder(confirmButton.dataset.confirmOrder);
+    return;
+  }
+
+  if (cancelButton) {
+    await cancelOrder(cancelButton.dataset.cancelOrder);
+  }
+});
+
+async function confirmOrder(orderId) {
+  const order = orders.find(item => item.id === orderId);
+
+  if (!order) return;
+
+  const confirmed = window.confirm(
+    `Confirmar o pedido nº ${order.order_number} e baixar o estoque?`
+  );
+
+  if (!confirmed) return;
+
+  const { error } = await supabaseClient.rpc(
+    "confirm_order",
+    {
+      p_order_id: orderId
+    }
+  );
+
+  if (error) {
+    console.error(error);
+    window.alert(error.message);
+    return;
+  }
+
+  await Promise.all([
+    loadOrders(),
+    loadProducts()
+  ]);
+}
+
+async function cancelOrder(orderId) {
+  const order = orders.find(item => item.id === orderId);
+
+  if (!order) return;
+
+  const confirmed = window.confirm(
+    `Cancelar o pedido nº ${order.order_number}?`
+  );
+
+  if (!confirmed) return;
+
+  const { error } = await supabaseClient.rpc(
+    "cancel_order",
+    {
+      p_order_id: orderId
+    }
+  );
+
+  if (error) {
+    console.error(error);
+    window.alert(error.message);
+    return;
+  }
+
+  await Promise.all([
+    loadOrders(),
+    loadProducts()
+  ]);
+}
+
+refreshOrdersButton.addEventListener("click", loadOrders);
 
 verifyAdmin();
