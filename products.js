@@ -12,7 +12,7 @@ const PRODUCTS = [
     name: "Chocolatudo",
     price: 12,
     image: "assets/images/chocolatudo.webp",
-    description: "Massa de chocolate com muitas gotas e pedaços de chocolate.",
+    description: "Massa de chocolate com recheio de brigadeiro de panela.",
     available: true
   },
   {
@@ -28,7 +28,7 @@ const PRODUCTS = [
     name: "KitKat",
     price: 15,
     image: "assets/images/kitkat-v2.webp",
-    description: "Cookie recheado e finalizado com chocolate KitKat.",
+    description: "Cookie recheado com creme de KitKat e finalizado com KitKat.",
     available: true
   },
   {
