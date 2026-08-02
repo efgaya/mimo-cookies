@@ -8,6 +8,14 @@ const PRODUCTS = [
     available: true
   },
   {
+    id: "tradicional",
+    name: "Tradicional",
+    price: 10,
+    image: "assets/images/tradicional-v2.webp",
+    description: "O clássico da casa, com massa amanteigada e chocolate.",
+    available: true
+  },
+  {
     id: "chocolatudo",
     name: "Chocolatudo",
     price: 12,
@@ -37,14 +45,6 @@ const PRODUCTS = [
     price: 14,
     image: "assets/images/red-velvet-v2.webp",
     description: "Massa red velvet com chocolate branco.",
-    available: true
-  },
-  {
-    id: "tradicional",
-    name: "Tradicional",
-    price: 10,
-    image: "assets/images/tradicional-v2.webp",
-    description: "O clássico da casa, com massa amanteigada e chocolate.",
     available: true
   }
 ];
