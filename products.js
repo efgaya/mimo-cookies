@@ -27,7 +27,7 @@ const PRODUCTS = [
     id: "kitkat",
     name: "KitKat",
     price: 15,
-    image: "assets/images/kitkat.webp",
+    image: "assets/images/kitkat-v2.webp",
     description: "Cookie recheado e finalizado com chocolate KitKat.",
     available: true
   },
@@ -35,7 +35,7 @@ const PRODUCTS = [
     id: "red-velvet",
     name: "Red Velvet",
     price: 14,
-    image: "assets/images/red-velvet.webp",
+    image: "assets/images/red-velvet-v2.webp",
     description: "Massa red velvet com chocolate branco.",
     available: true
   },
@@ -43,7 +43,7 @@ const PRODUCTS = [
     id: "tradicional",
     name: "Tradicional",
     price: 10,
-    image: "assets/images/tradicional.webp",
+    image: "assets/images/tradicional-v2.webp",
     description: "O clássico da casa, com massa amanteigada e chocolate.",
     available: true
   }
