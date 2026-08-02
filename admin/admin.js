@@ -40,6 +40,12 @@ const ordersList = document.querySelector("#orders-list");
 const refreshOrdersButton =
   document.querySelector("#refresh-orders-button");
 
+const tabButtons =
+  document.querySelectorAll("[data-tab]");
+
+const tabPanels =
+  document.querySelectorAll("[data-panel]");
+
 let products = [];
 let orders = [];
 
@@ -712,5 +718,34 @@ async function cancelOrder(orderId) {
 }
 
 refreshOrdersButton.addEventListener("click", loadOrders);
+
+tabButtons.forEach(button => {
+  button.addEventListener("click", () => {
+    const selectedTab = button.dataset.tab;
+
+    tabButtons.forEach(tabButton => {
+      tabButton.classList.toggle(
+        "active",
+        tabButton.dataset.tab === selectedTab
+      );
+    });
+
+    tabPanels.forEach(panelElement => {
+      const isSelected =
+        panelElement.dataset.panel === selectedTab;
+
+      panelElement.hidden = !isSelected;
+
+      panelElement.classList.toggle(
+        "active",
+        isSelected
+      );
+    });
+
+    if (selectedTab === "orders") {
+      loadOrders();
+    }
+  });
+});
 
 verifyAdmin();
