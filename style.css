@@ -455,6 +455,27 @@ input[type="text"]:focus, textarea:focus {
   border-top: 1px solid var(--line);
   font-size: 18px;
 }
+.turnstile-section {
+  display: grid;
+  gap: 9px;
+  justify-items: center;
+  padding: 15px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: white;
+  color: var(--brown-dark);
+  text-align: center;
+}
+.turnstile-section > strong { font-size: 14px; }
+.turnstile-message {
+  min-height: 18px;
+  margin: 0;
+  color: var(--text-soft);
+  font-size: 12px;
+}
+.turnstile-message.success { color: var(--green); }
+.turnstile-message.error { color: #a33a3a; }
 .whatsapp-button {
   min-height: 54px;
   border: 0;
@@ -541,5 +562,9 @@ footer a { font-weight: 700; }
   .pickup-actions { margin-top: 14px; }
   .pickup-actions a { width: 100%; }
   .cart-panel { padding: 22px 16px 40px; }
+  #turnstile-widget {
+    max-width: 100%;
+    transform-origin: center;
+  }
   .footer-content, .footer-brand-wrap { flex-direction: column; text-align: center; }
 }
