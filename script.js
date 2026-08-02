@@ -5,6 +5,9 @@ const BRL = new Intl.NumberFormat("pt-BR", {
 
 const cart = new Map();
 let PRODUCTS = [];
+let isSubmitting = false;
+let lastRegisteredSignature = null;
+let lastWhatsAppUrl = null;
 
 const PRODUCT_EMOJIS = {
   tradicional: String.fromCodePoint(0x1F90E),
@@ -34,6 +37,70 @@ const form = document.querySelector("#checkout-form");
 const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
 const whatsappButton = document.querySelector("#whatsapp-button");
+
+function getCurrentOrderSignature() {
+  const cartItemsSignature = [...cart.entries()]
+    .sort(([idA], [idB]) => idA.localeCompare(idB))
+    .map(([id, quantity]) => ({
+      id,
+      quantity
+    }));
+
+  const delivery =
+    document.querySelector('input[name="delivery"]:checked')
+      ?.value || "";
+
+  const payment =
+    document.querySelector('input[name="payment"]:checked')
+      ?.value || "";
+
+  const name =
+    document.querySelector("#customer-name")
+      ?.value.trim() || "";
+
+  const address =
+    addressInput?.value.trim() || "";
+
+  const notes =
+    document.querySelector("#customer-notes")
+      ?.value.trim() || "";
+
+  return JSON.stringify({
+    cart: cartItemsSignature,
+    delivery,
+    payment,
+    name,
+    address,
+    notes
+  });
+}
+
+function refreshWhatsappButton() {
+  const quantity = [...cart.values()]
+    .reduce((sum, value) => sum + value, 0);
+
+  const sameRegisteredOrder =
+    quantity > 0 &&
+    lastRegisteredSignature === getCurrentOrderSignature();
+
+  if (isSubmitting) {
+    whatsappButton.disabled = true;
+    whatsappButton.textContent = "Registrando pedido...";
+    return;
+  }
+
+  if (quantity === 0) {
+    whatsappButton.disabled = true;
+    whatsappButton.textContent = "Pedir pelo WhatsApp";
+    return;
+  }
+
+  whatsappButton.disabled = false;
+
+  whatsappButton.textContent = sameRegisteredOrder
+    ? "Abrir WhatsApp novamente"
+    : "Pedir pelo WhatsApp";
+}
 
 async function loadProducts() {
   try {
@@ -239,7 +306,8 @@ function updateCart() {
 
   subtotalEl.textContent = BRL.format(subtotal);
   totalEl.textContent = BRL.format(subtotal);
-  whatsappButton.disabled = quantity === 0;
+  
+  refreshWhatsappButton();
 
   if (!quantity) {
     cartItems.innerHTML = `
@@ -355,10 +423,27 @@ document
     });
   });
 
+form.addEventListener("input", refreshWhatsappButton);
+form.addEventListener("change", refreshWhatsappButton);
+
 form.addEventListener("submit", async event => {
   event.preventDefault();
 
-  if (!cart.size) return;
+  if (!cart.size || isSubmitting) return;
+
+  const currentSignature = getCurrentOrderSignature();
+
+  /*
+   * O pedido já foi registrado e nada foi alterado.
+   * Apenas reabre a mesma mensagem no WhatsApp.
+   */
+  if (
+    currentSignature === lastRegisteredSignature &&
+    lastWhatsAppUrl
+  ) {
+    window.open(lastWhatsAppUrl, "_blank", "noopener");
+    return;
+  }
 
   const whatsapp =
     STORE_CONFIG.whatsappNumber.replace(/\D/g, "");
@@ -395,8 +480,8 @@ form.addEventListener("submit", async event => {
     quantity: qty
   }));
 
-  whatsappButton.disabled = true;
-  whatsappButton.textContent = "Registrando pedido...";
+  isSubmitting = true;
+  refreshWhatsappButton();
 
   try {
     const { data, error } = await supabaseClient.rpc(
@@ -466,12 +551,14 @@ form.addEventListener("submit", async event => {
         : `*Total:* ${BRL.format(subtotal)}`
     ].filter(Boolean);
 
-    const url =
+    lastWhatsAppUrl =
       `https://wa.me/${whatsapp}?text=${encodeURIComponent(
         lines.join("\n")
       )}`;
 
-    window.open(url, "_blank", "noopener");
+    lastRegisteredSignature = currentSignature;
+
+    window.open(lastWhatsAppUrl, "_blank", "noopener");
 
   } catch (error) {
     console.error("Erro ao registrar pedido:", error);
@@ -481,8 +568,8 @@ form.addEventListener("submit", async event => {
       "Não foi possível registrar o pedido. Tente novamente."
     );
   } finally {
-    whatsappButton.disabled = false;
-    whatsappButton.textContent = "Pedir pelo WhatsApp";
+    isSubmitting = false;
+    refreshWhatsappButton();
   }
 });
 
