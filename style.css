@@ -395,6 +395,12 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
   cursor: pointer;
   font-weight: 800;
 }
+
+.quantity button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
 .checkout-form { display: grid; gap: 17px; }
 fieldset { margin: 0; padding: 0; border: 0; }
 legend, .checkout-form > label {
