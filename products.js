@@ -1,4 +1,4 @@
-const PRODUCTS = [
+const FALLBACK_PRODUCTS = [
   {
     id: "biscoff",
     name: "Biscoff",
