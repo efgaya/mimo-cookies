@@ -23,6 +23,32 @@ const greetingEmojis = String.fromCodePoint(
   0x1F497
 );
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+function getSafeImageSource(value) {
+  const source = String(value ?? "").trim();
+
+  if (!source) return "";
+
+  try {
+    const url = new URL(source, window.location.href);
+
+    return ["http:", "https:"].includes(url.protocol)
+      ? escapeHtml(source)
+      : "";
+  } catch {
+    return "";
+  }
+}
+
 const grid = document.querySelector("#product-grid");
 const cartFab = document.querySelector("#cart-fab");
 const cartFabSummary = document.querySelector("#cart-fab-summary");
@@ -183,14 +209,16 @@ function getProductStatus(product) {
 function renderProducts() {
   grid.innerHTML = PRODUCTS.map(product => {
     const status = getProductStatus(product);
+    const productId = escapeHtml(product.id);
+    const productName = escapeHtml(product.name);
 
     return `
       <article class="product-card">
         <div class="product-image-wrap">
           <img
             class="product-image"
-            src="${product.image}"
-            alt="${product.name}"
+            src="${getSafeImageSource(product.image)}"
+            alt="${productName}"
             loading="lazy"
           >
 
@@ -201,16 +229,16 @@ function renderProducts() {
 
         <div class="product-body">
           <div class="product-title-row">
-            <h3>${product.name}</h3>
+            <h3>${productName}</h3>
             <span class="price">${BRL.format(product.price)}</span>
           </div>
 
-          <p>${product.description}</p>
+          <p>${escapeHtml(product.description)}</p>
 
           <button
             class="add-button"
             type="button"
-            data-add="${product.id}"
+            data-add="${productId}"
             ${product.available ? "" : "disabled"}
           >
             ${product.available
@@ -325,12 +353,14 @@ function updateCart() {
 
       if (!product) return "";
 
+      const productId = escapeHtml(id);
+
       return `
         <div class="cart-item">
-          <img src="${product.image}" alt="">
+          <img src="${getSafeImageSource(product.image)}" alt="">
 
           <div>
-            <h4>${product.name}</h4>
+            <h4>${escapeHtml(product.name)}</h4>
             <small>
               ${BRL.format(product.price * qty)}
             </small>
@@ -339,7 +369,7 @@ function updateCart() {
           <div class="quantity">
             <button
               type="button"
-              data-change="${id}"
+              data-change="${productId}"
               data-delta="-1"
               aria-label="Remover uma unidade"
             >
@@ -350,7 +380,7 @@ function updateCart() {
 
             <button
   type="button"
-  data-change="${id}"
+              data-change="${productId}"
   data-delta="1"
   aria-label="Adicionar uma unidade"
   ${

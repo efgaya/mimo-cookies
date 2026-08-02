@@ -49,6 +49,56 @@ const tabPanels =
 let products = [];
 let orders = [];
 
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+function getSafeImageSource(value) {
+  const source = String(value ?? "").trim();
+
+  if (!source) return "";
+
+  const absoluteHttpUrl = /^https?:\/\//i;
+  const explicitProtocol = /^[a-z][a-z\d+.-]*:/i;
+
+  if (absoluteHttpUrl.test(source)) {
+    try {
+      const url = new URL(source);
+
+      if (!["http:", "https:"].includes(url.protocol)) return "";
+
+      return escapeHtml(source);
+    } catch {
+      return "";
+    }
+  }
+
+  if (
+    explicitProtocol.test(source) ||
+    source.startsWith("/")
+  ) {
+    return "";
+  }
+
+  try {
+    new URL(source, "https://local.invalid/");
+
+    const relativeSource = source.startsWith("../")
+      ? source
+      : `../${source.replace(/^\.\/+/, "")}`;
+
+    return escapeHtml(relativeSource);
+  } catch {
+    return "";
+  }
+}
+
 function setMessage(element, text = "", type = "") {
   element.textContent = text;
   element.className = "message";
@@ -217,26 +267,26 @@ function renderProducts() {
       class="product-row ${product.available ? "" : "status-off"}"
     >
       <img
-        src="../${product.image_url}"
-        alt="${product.name}"
+        src="${getSafeImageSource(product.image_url)}"
+        alt="${escapeHtml(product.name)}"
       >
 
       <div class="product-info">
-        <h3>${product.name}</h3>
-        <p>${product.description}</p>
+        <h3>${escapeHtml(product.name)}</h3>
+        <p>${escapeHtml(product.description)}</p>
 
         <div class="product-meta">
           ${BRL.format(Number(product.price))}
-          · ordem ${product.display_order}
+          · ordem ${escapeHtml(product.display_order)}
           · ${product.available ? "disponível" : "esgotado"}
-          ${product.stock === null ? "" : ` · estoque ${product.stock}`}
+          ${product.stock === null ? "" : ` · estoque ${escapeHtml(product.stock)}`}
         </div>
       </div>
 
       <div class="product-actions">
         <button
           type="button"
-          data-edit="${product.id}"
+          data-edit="${escapeHtml(product.id)}"
         >
           Editar
         </button>
@@ -244,7 +294,7 @@ function renderProducts() {
         <button
           class="delete-button"
           type="button"
-          data-delete="${product.id}"
+          data-delete="${escapeHtml(product.id)}"
         >
           Excluir
         </button>
@@ -339,11 +389,16 @@ function renderOrders() {
 
   ordersList.innerHTML = orders.map(order => {
     const items = order.order_items || [];
+    const orderId = escapeHtml(order.id);
+    const orderStatus = Object.hasOwn(
+      ORDER_STATUS_LABELS,
+      order.status
+    ) ? order.status : "unknown";
 
     const itemsHtml = items.map(item => `
       <div class="order-item-line">
         <span>
-          ${item.quantity}x ${item.product_name}
+          ${escapeHtml(item.quantity)}x ${escapeHtml(item.product_name)}
         </span>
 
         <strong>
@@ -360,40 +415,42 @@ function renderOrders() {
     ].includes(order.status);
 
     return `
-      <article class="order-card ${order.status}">
+      <article class="order-card ${orderStatus}">
         <div class="order-header">
           <div>
             <h3>
-              Pedido nº ${order.order_number}
-              — ${order.customer_name}
+              Pedido nº ${escapeHtml(order.order_number)}
+              — ${escapeHtml(order.customer_name)}
             </h3>
 
             <p>
-              Registrado em ${formatDate(order.created_at)}
+              Registrado em ${escapeHtml(formatDate(order.created_at))}
             </p>
           </div>
 
-          <span class="order-status ${order.status}">
-            ${ORDER_STATUS_LABELS[order.status] || order.status}
+          <span class="order-status ${orderStatus}">
+            ${escapeHtml(ORDER_STATUS_LABELS[order.status] || order.status)}
           </span>
         </div>
 
         <div class="order-details">
           <div class="order-detail">
             <small>Recebimento</small>
-            <strong>${order.delivery_method}</strong>
+            <strong>${escapeHtml(order.delivery_method)}</strong>
           </div>
 
           <div class="order-detail">
             <small>Pagamento</small>
-            <strong>${order.payment_method}</strong>
+            <strong>${escapeHtml(order.payment_method)}</strong>
           </div>
 
           <div class="order-detail">
             <small>Situação do pagamento</small>
             <strong>
-              ${PAYMENT_STATUS_LABELS[order.payment_status]
-                || order.payment_status}
+              ${escapeHtml(
+                PAYMENT_STATUS_LABELS[order.payment_status]
+                  || order.payment_status
+              )}
             </strong>
           </div>
 
@@ -408,7 +465,7 @@ function renderOrders() {
             ? `
               <div class="order-notes">
                 <strong>Endereço:</strong>
-                ${order.customer_address || "Não informado"}
+                ${escapeHtml(order.customer_address || "Não informado")}
               </div>
             `
             : ""
@@ -419,7 +476,7 @@ function renderOrders() {
             ? `
               <div class="order-notes">
                 <strong>Observações:</strong>
-                ${order.notes}
+                ${escapeHtml(order.notes)}
               </div>
             `
             : ""
@@ -439,7 +496,7 @@ function renderOrders() {
                       <button
                         class="confirm-order-button"
                         type="button"
-                        data-confirm-order="${order.id}"
+                        data-confirm-order="${orderId}"
                       >
                         Confirmar e baixar estoque
                       </button>
@@ -453,7 +510,7 @@ function renderOrders() {
                       <button
                         class="cancel-order-button"
                         type="button"
-                        data-cancel-order="${order.id}"
+                        data-cancel-order="${orderId}"
                       >
                         Cancelar pedido
                       </button>
