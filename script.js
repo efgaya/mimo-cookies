@@ -325,7 +325,7 @@ async function loadProducts() {
 function getProductStatus(product) {
   if (!product.available || product.stock === 0) {
     return {
-      text: "Esgotado",
+      text: "ESGOTADO :(",
       className: "status-sold-out"
     };
   }
@@ -337,13 +337,13 @@ function getProductStatus(product) {
     product.stock <= 3
   ) {
     return {
-      text: "Últimas unidades",
+      text: "ACABANDO :O",
       className: "status-low-stock"
     };
   }
 
   return {
-    text: "Disponível",
+    text: "DISPONÍVEL :D",
     className: "status-available"
   };
 }
