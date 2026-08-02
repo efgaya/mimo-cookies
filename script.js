@@ -355,7 +355,7 @@ document
     });
   });
 
-form.addEventListener("submit", event => {
+form.addEventListener("submit", async event => {
   event.preventDefault();
 
   if (!cart.size) return;
@@ -367,7 +367,6 @@ form.addEventListener("submit", event => {
     alert(
       "Falta configurar o número do WhatsApp no arquivo config.js."
     );
-
     return;
   }
 
@@ -380,6 +379,10 @@ form.addEventListener("submit", event => {
     .querySelector('input[name="delivery"]:checked')
     .value;
 
+  const payment = document
+    .querySelector('input[name="payment"]:checked')
+    .value;
+
   const address = addressInput.value.trim();
 
   const notes = document
@@ -387,50 +390,100 @@ form.addEventListener("submit", event => {
     .value
     .trim();
 
-  const subtotal = calculateSubtotal();
+  const items = [...cart.entries()].map(([id, qty]) => ({
+    slug: id,
+    quantity: qty
+  }));
 
-  const lines = [
-    `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} ${greetingEmojis}`,
-    "",
-    "*Pedido:*",
+  whatsappButton.disabled = true;
+  whatsappButton.textContent = "Registrando pedido...";
 
-    ...[...cart.entries()].map(([id, qty]) => {
-      const product = getProduct(id);
-      const emoji = PRODUCT_EMOJIS[id] || "";
+  try {
+    const { data, error } = await supabaseClient.rpc(
+      "create_order",
+      {
+        p_customer_name: name,
+        p_delivery_method: delivery,
+        p_payment_method: payment,
+        p_customer_address:
+          delivery === "Entrega" ? address : "",
+        p_notes: notes,
+        p_items: items
+      }
+    );
 
-      return `${emoji} ${qty}x ${product.name} — ${BRL.format(product.price * qty)}`;
-    }),
+    if (error) {
+      throw error;
+    }
 
-    "",
-    `*Produtos:* ${BRL.format(subtotal)}`,
-    `*Recebimento:* ${delivery}`,
+    const orderNumber = data.order_number;
+    const subtotal = Number(data.subtotal);
 
-    delivery === "Entrega"
-      ? "*Frete:* a calcular"
-      : "*Frete:* grátis",
+    const lines = [
+      `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} ${greetingEmojis}`,
+      "",
+      `*Pedido Mimo nº ${orderNumber}*`,
+      "",
+      "*Itens:*",
 
-    delivery === "Entrega"
-      ? `*Endereço:* ${address}`
-      : `*Retirada:* ${STORE_CONFIG.pickupAddress}`,
+      ...[...cart.entries()].map(([id, qty]) => {
+        const product = getProduct(id);
+        const emoji = PRODUCT_EMOJIS[id] || "";
 
-    "",
-    `*Nome:* ${name}`,
+        return `${emoji} ${qty}x ${product.name} — ${BRL.format(
+          product.price * qty
+        )}`;
+      }),
 
-    notes
-      ? `*Observações:* ${notes}`
-      : "",
+      "",
+      `*Produtos:* ${BRL.format(subtotal)}`,
+      `*Recebimento:* ${delivery}`,
+      `*Pagamento:* ${payment}`,
 
-    "",
+      delivery === "Entrega"
+        ? "*Frete:* a calcular"
+        : "*Frete:* grátis",
 
-    delivery === "Entrega"
-      ? `*Total parcial:* ${BRL.format(subtotal)} + frete`
-      : `*Total:* ${BRL.format(subtotal)}`
-  ].filter(Boolean);
+      delivery === "Entrega"
+        ? `*Endereço:* ${address}`
+        : `*Retirada:* ${STORE_CONFIG.pickupAddress}`,
 
-  const url =
-    `https://wa.me/${whatsapp}?text=${encodeURIComponent(lines.join("\n"))}`;
+      "",
+      `*Nome:* ${name}`,
 
-  window.open(url, "_blank", "noopener");
+      notes
+        ? `*Observações:* ${notes}`
+        : "",
+
+      "",
+
+      payment === "Pix"
+        ? "Aguardando envio da chave Pix."
+        : "Aguardando envio do link de pagamento.",
+
+      delivery === "Entrega"
+        ? `*Total parcial:* ${BRL.format(subtotal)} + frete`
+        : `*Total:* ${BRL.format(subtotal)}`
+    ].filter(Boolean);
+
+    const url =
+      `https://wa.me/${whatsapp}?text=${encodeURIComponent(
+        lines.join("\n")
+      )}`;
+
+    window.open(url, "_blank", "noopener");
+
+  } catch (error) {
+    console.error("Erro ao registrar pedido:", error);
+
+    alert(
+      error.message ||
+      "Não foi possível registrar o pedido. Tente novamente."
+    );
+  } finally {
+    whatsappButton.disabled = false;
+    whatsappButton.textContent = "Pedir pelo WhatsApp";
+  }
 });
 
 async function initializeStore() {
