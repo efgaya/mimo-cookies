@@ -286,7 +286,7 @@ button:disabled {
 }
 
 .orders-panel {
-  margin-top: 24px;
+  margin-top: 0;
 }
 
 .orders-list {
@@ -426,6 +426,46 @@ button:disabled {
   border: 1px solid #efd0d0;
   background: #fff6f6;
   color: var(--danger);
+}
+
+.admin-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: var(--shadow);
+}
+
+.admin-tab {
+  flex: 1;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--muted);
+  padding: 13px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-tab:hover {
+  background: var(--cream);
+  color: var(--brown);
+}
+
+.admin-tab.active {
+  background: var(--brown);
+  color: white;
+}
+
+.tab-panel[hidden] {
+  display: none;
+}
+
+.orders-panel {
+  margin-top: 0;
 }
 
 @media (max-width: 760px) {
