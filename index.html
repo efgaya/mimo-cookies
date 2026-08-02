@@ -138,6 +138,47 @@
         </label>
       </fieldset>
 
+      <fieldset>
+  <legend>Forma de pagamento</legend>
+
+  <label class="choice">
+    <input
+      type="radio"
+      name="payment"
+      value="Pix"
+      checked
+    >
+    <span>
+      <strong>Pix</strong>
+      <small>A chave será enviada pelo WhatsApp</small>
+    </span>
+  </label>
+
+  <label class="choice">
+    <input
+      type="radio"
+      name="payment"
+      value="Cartão de crédito"
+    >
+    <span>
+      <strong>Cartão de crédito</strong>
+      <small>O link de pagamento será enviado pelo WhatsApp</small>
+    </span>
+  </label>
+
+  <label class="choice">
+    <input
+      type="radio"
+      name="payment"
+      value="Cartão de débito"
+    >
+    <span>
+      <strong>Cartão de débito</strong>
+      <small>O link de pagamento será enviado pelo WhatsApp</small>
+    </span>
+  </label>
+</fieldset>
+
       <label>
         Seu nome
         <input id="customer-name" type="text" placeholder="Como podemos chamar você?" required>
