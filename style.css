@@ -308,6 +308,29 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
 .cart-fab span { font-weight: 700; }
 .cart-fab strong { font-size: 14px; }
 
+.cart-confirmation {
+  position: fixed;
+  z-index: 25;
+  left: 50%;
+  bottom: 100px;
+  width: max-content;
+  max-width: calc(100% - 28px);
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--brown-dark);
+  color: white;
+  box-shadow: 0 12px 30px rgba(75, 33, 29, .22);
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  transform: translate(-50%, 10px);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.cart-confirmation.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
 .overlay {
   position: fixed;
   z-index: 30;

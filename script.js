@@ -10,6 +10,8 @@ let lastRegisteredSignature = null;
 let lastWhatsAppUrl = null;
 let turnstileToken = null;
 let turnstileWidgetId = null;
+let cartConfirmationTimeout = null;
+let cartConfirmationFrame = null;
 
 const TURNSTILE_ACTION = "create_order";
 
@@ -68,6 +70,37 @@ const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
 const whatsappButton = document.querySelector("#whatsapp-button");
 const turnstileMessage = document.querySelector("#turnstile-message");
+
+const cartConfirmation = document.createElement("div");
+cartConfirmation.className = "cart-confirmation";
+cartConfirmation.setAttribute("role", "status");
+cartConfirmation.setAttribute("aria-live", "polite");
+cartConfirmation.setAttribute("aria-atomic", "true");
+document.body.append(cartConfirmation);
+cartConfirmation.addEventListener("transitionend", event => {
+  if (
+    event.propertyName === "opacity" &&
+    !cartConfirmation.classList.contains("visible")
+  ) {
+    cartConfirmation.textContent = "";
+  }
+});
+
+function showCartConfirmation(productName) {
+  window.clearTimeout(cartConfirmationTimeout);
+  window.cancelAnimationFrame(cartConfirmationFrame);
+
+  cartConfirmation.textContent = "";
+
+  cartConfirmationFrame = window.requestAnimationFrame(() => {
+    cartConfirmation.textContent = `${productName} adicionado ao carrinho.`;
+    cartConfirmation.classList.add("visible");
+
+    cartConfirmationTimeout = window.setTimeout(() => {
+      cartConfirmation.classList.remove("visible");
+    }, 2500);
+  });
+}
 
 function setTurnstileMessage(text, type = "") {
   turnstileMessage.textContent = text;
@@ -420,7 +453,7 @@ function addItem(id) {
   cart.set(id, currentQuantity + 1);
 
   updateCart();
-  openCart();
+  showCartConfirmation(product.name);
 }
 
 function changeQuantity(id, delta) {
