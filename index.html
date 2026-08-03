@@ -179,20 +179,20 @@
       <fieldset>
         <legend>Como deseja receber?</legend>
         <label class="choice">
-          <input type="radio" name="delivery" value="Retirada" checked>
-          <span>
-            <strong>Retirada</strong>
-            <small>Av. Frei Vicente, 485</small>
-          </span>
-          <b>Grátis</b>
-        </label>
-        <label class="choice">
-          <input type="radio" name="delivery" value="Entrega">
+          <input type="radio" name="delivery" value="Entrega" checked>
           <span>
             <strong>Entrega</strong>
             <small>Frete confirmado no WhatsApp</small>
           </span>
           <b>A calcular</b>
+        </label>
+        <label class="choice">
+          <input type="radio" name="delivery" value="Retirada">
+          <span>
+            <strong>Retirada</strong>
+            <small>Av. Frei Vicente, 485</small>
+          </span>
+          <b>Grátis</b>
         </label>
       </fieldset>
 
@@ -242,10 +242,10 @@
         <input id="customer-name" type="text" placeholder="Como podemos chamar você?" required>
       </label>
 
-      <div id="address-fields" hidden>
+      <div id="address-fields">
         <label>
           Endereço de entrega
-          <input id="customer-address" type="text" placeholder="Rua, número, bairro e complemento">
+          <input id="customer-address" type="text" placeholder="Rua, número, bairro e complemento" required>
         </label>
       </div>
 
@@ -256,7 +256,7 @@
 
       <div class="totals">
         <div><span>Produtos</span><strong id="subtotal">R$ 0,00</strong></div>
-        <div><span>Entrega</span><strong id="shipping">Grátis</strong></div>
+        <div><span>Entrega</span><strong id="shipping">A calcular</strong></div>
         <div class="grand-total"><span>Total parcial</span><strong id="total">R$ 0,00</strong></div>
       </div>
 
@@ -296,6 +296,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="supabase-config.js?v=1"></script>
 <script src="products.js?v=4"></script>
-<script src="script.js?v=8"></script>
+<script src="script.js?v=9"></script>
 </body>
 </html>

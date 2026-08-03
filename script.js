@@ -706,21 +706,24 @@ document.addEventListener("keydown", event => {
   }
 });
 
+function updateDeliveryFields() {
+  const selectedDelivery = document.querySelector(
+    'input[name="delivery"]:checked'
+  )?.value;
+  const isDelivery = selectedDelivery === "Entrega";
+
+  addressFields.hidden = !isDelivery;
+  addressInput.required = isDelivery;
+  shippingEl.textContent = isDelivery ? "A calcular" : "Grátis";
+}
+
 document
   .querySelectorAll('input[name="delivery"]')
   .forEach(input => {
-    input.addEventListener("change", () => {
-      const isDelivery =
-        input.value === "Entrega" &&
-        input.checked;
-
-      addressFields.hidden = !isDelivery;
-      addressInput.required = isDelivery;
-
-      shippingEl.textContent =
-        isDelivery ? "A calcular" : "Grátis";
-    });
+    input.addEventListener("change", updateDeliveryFields);
   });
+
+updateDeliveryFields();
 
 form.addEventListener("input", refreshWhatsappButton);
 form.addEventListener("change", refreshWhatsappButton);
