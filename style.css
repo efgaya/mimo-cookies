@@ -353,6 +353,10 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
   transition: transform .25s ease;
 }
 .cart-panel.open { transform: translateX(0); }
+.cart-panel.swiping {
+  transform: translateX(var(--cart-swipe-x, 0));
+  transition: none;
+}
 .cart-header { display: flex; align-items: center; justify-content: space-between; }
 .icon-button {
   width: 42px;
@@ -370,6 +374,10 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
   border-radius: 16px;
   color: var(--text-soft);
   text-align: center;
+}
+
+@media (any-pointer: coarse) {
+  .cart-panel { touch-action: pan-y; }
 }
 .cart-item {
   display: grid;

@@ -14,6 +14,9 @@ let cartConfirmationTimeout = null;
 let cartConfirmationFrame = null;
 
 const TURNSTILE_ACTION = "create_order";
+const CART_SWIPE_CLOSE_THRESHOLD = 80;
+const CART_SWIPE_DIRECTION_THRESHOLD = 10;
+const CART_SWIPE_HORIZONTAL_RATIO = 1.2;
 
 const PRODUCT_EMOJIS = {
   tradicional: String.fromCodePoint(0x1F90E),
@@ -594,12 +597,103 @@ function openCart() {
   document.body.classList.add("cart-open");
 }
 
+let cartSwipe = null;
+
+function resetCartSwipe() {
+  cartSwipe = null;
+  panel.classList.remove("swiping");
+  panel.style.removeProperty("--cart-swipe-x");
+}
+
 function closeCart() {
+  resetCartSwipe();
   panel.classList.remove("open");
   panel.setAttribute("aria-hidden", "true");
   cartFab.setAttribute("aria-expanded", "false");
   overlay.hidden = true;
   document.body.classList.remove("cart-open");
+}
+
+function handleCartPointerDown(event) {
+  if (
+    event.pointerType !== "touch" ||
+    !event.isPrimary ||
+    !panel.classList.contains("open") ||
+    cartSwipe
+  ) {
+    return;
+  }
+
+  cartSwipe = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    direction: null,
+    distance: 0
+  };
+}
+
+function handleCartPointerMove(event) {
+  if (!cartSwipe || event.pointerId !== cartSwipe.pointerId) return;
+
+  const deltaX = event.clientX - cartSwipe.startX;
+  const deltaY = event.clientY - cartSwipe.startY;
+  const absoluteX = Math.abs(deltaX);
+  const absoluteY = Math.abs(deltaY);
+
+  if (!cartSwipe.direction) {
+    if (
+      absoluteX < CART_SWIPE_DIRECTION_THRESHOLD &&
+      absoluteY < CART_SWIPE_DIRECTION_THRESHOLD
+    ) {
+      return;
+    }
+
+    if (
+      deltaX > 0 &&
+      absoluteX > absoluteY * CART_SWIPE_HORIZONTAL_RATIO
+    ) {
+      cartSwipe.direction = "horizontal";
+      panel.classList.add("swiping");
+      panel.setPointerCapture(event.pointerId);
+    } else if (absoluteY >= absoluteX || deltaX <= 0) {
+      cartSwipe.direction = "ignored";
+    } else {
+      return;
+    }
+  }
+
+  if (cartSwipe.direction !== "horizontal") return;
+
+  event.preventDefault();
+  cartSwipe.distance = Math.max(0, deltaX);
+  panel.style.setProperty("--cart-swipe-x", `${cartSwipe.distance}px`);
+}
+
+function handleCartPointerEnd(event) {
+  if (!cartSwipe || event.pointerId !== cartSwipe.pointerId) return;
+
+  const shouldClose =
+    event.type === "pointerup" &&
+    cartSwipe.direction === "horizontal" &&
+    cartSwipe.distance >= CART_SWIPE_CLOSE_THRESHOLD;
+
+  if (cartSwipe.direction === "horizontal") {
+    event.preventDefault();
+  }
+
+  if (shouldClose) {
+    closeCart();
+  } else {
+    resetCartSwipe();
+  }
+}
+
+if ("PointerEvent" in window) {
+  panel.addEventListener("pointerdown", handleCartPointerDown);
+  panel.addEventListener("pointermove", handleCartPointerMove);
+  panel.addEventListener("pointerup", handleCartPointerEnd);
+  panel.addEventListener("pointercancel", handleCartPointerEnd);
 }
 
 cartFab.addEventListener("click", openCart);
