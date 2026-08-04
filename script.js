@@ -35,6 +35,22 @@ const WHATSAPP_EMOJIS = Object.freeze({
   notes: String.fromCodePoint(0x1F4DD)
 });
 
+function shouldIncludeWhatsAppEmojis() {
+  if (typeof navigator.userAgentData?.mobile === "boolean") {
+    return navigator.userAgentData.mobile;
+  }
+
+  const userAgent = navigator.userAgent || "";
+  const hasMobileUserAgent =
+    /Android|iPhone|iPad|iPod|IEMobile|Opera Mini|Mobile|BlackBerry|webOS/i
+      .test(userAgent);
+  const isIPadOS =
+    /Macintosh/i.test(userAgent) &&
+    navigator.maxTouchPoints > 1;
+
+  return hasMobileUserAgent || isIPadOS;
+}
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
@@ -101,29 +117,36 @@ function buildWhatsAppMessage({
   delivery,
   address,
   notes,
-  total
+  total,
+  includeEmojis = true
 }) {
   const totalLabel =
     delivery === "Entrega" ? "Subtotal" : "Total";
+  const emojiPrefix = name => includeEmojis
+    ? `${WHATSAPP_EMOJIS[name]} `
+    : "";
+  const greetingEmojis = includeEmojis
+    ? ` ${WHATSAPP_EMOJIS.cookie}${WHATSAPP_EMOJIS.heart}`
+    : "";
 
   const lines = [
-    `Olá! Este é meu pedido na Mimo Cookies ${WHATSAPP_EMOJIS.cookie}${WHATSAPP_EMOJIS.heart}`,
+    `Olá! Este é meu pedido na Mimo Cookies${greetingEmojis}`,
     "",
     `*Pedido Mimo nº ${orderNumber}*`,
-    `${WHATSAPP_EMOJIS.customer} *Cliente:* ${customerName}`,
+    `${emojiPrefix("customer")}*Cliente:* ${customerName}`,
     "",
-    `${WHATSAPP_EMOJIS.cart} *Itens:*`,
+    `${emojiPrefix("cart")}*Itens:*`,
     ...items,
     "",
-    `${WHATSAPP_EMOJIS.payment} *Pagamento:* ${payment}`,
+    `${emojiPrefix("payment")}*Pagamento:* ${payment}`,
     "",
-    `${WHATSAPP_EMOJIS.location} *Recebimento:* ${delivery}`,
+    `${emojiPrefix("location")}*Recebimento:* ${delivery}`,
     delivery === "Entrega"
-      ? `${WHATSAPP_EMOJIS.home} *Endereço:* ${address}`
-      : `${WHATSAPP_EMOJIS.home} *Retirada:* ${STORE_CONFIG.pickupAddress}`,
+      ? `${emojiPrefix("home")}*Endereço:* ${address}`
+      : `${emojiPrefix("home")}*Retirada:* ${STORE_CONFIG.pickupAddress}`,
     delivery === "Entrega"
-      ? `${WHATSAPP_EMOJIS.delivery} *Frete:* a calcular`
-      : `${WHATSAPP_EMOJIS.delivery} *Frete:* grátis`,
+      ? `${emojiPrefix("delivery")}*Frete:* a calcular`
+      : `${emojiPrefix("delivery")}*Frete:* grátis`,
     "",
     payment === "Pix"
       ? "Aguardando envio da chave Pix."
@@ -133,7 +156,7 @@ function buildWhatsAppMessage({
   if (notes) {
     lines.push(
       "",
-      `${WHATSAPP_EMOJIS.notes} *Observações:* ${notes}`
+      `${emojiPrefix("notes")}*Observações:* ${notes}`
     );
   }
 
@@ -1033,7 +1056,8 @@ form.addEventListener("submit", async event => {
       delivery,
       address,
       notes,
-      total: subtotal
+      total: subtotal,
+      includeEmojis: shouldIncludeWhatsAppEmojis()
     });
 
     lastWhatsAppUrl =
