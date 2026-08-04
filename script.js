@@ -23,20 +23,6 @@ const CART_SWIPE_CLOSE_THRESHOLD = 80;
 const CART_SWIPE_DIRECTION_THRESHOLD = 10;
 const CART_SWIPE_HORIZONTAL_RATIO = 1.2;
 
-const PRODUCT_EMOJIS = {
-  tradicional: String.fromCodePoint(0x1F90E),
-  chocolatudo: String.fromCodePoint(0x1F36B),
-  "caramelo-salgado": String.fromCodePoint(0x1F36F),
-  kitkat: String.fromCodePoint(0x1F36B),
-  biscoff: String.fromCodePoint(0x1F950),
-  "red-velvet": String.fromCodePoint(0x2764, 0xFE0F)
-};
-
-const greetingEmojis = String.fromCodePoint(
-  0x1F36A,
-  0x1F497
-);
-
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
@@ -93,6 +79,52 @@ function isSameLocalDate(firstDate, secondDate) {
     firstDate.getMonth() === secondDate.getMonth() &&
     firstDate.getDate() === secondDate.getDate()
   );
+}
+
+function buildWhatsAppMessage({
+  orderNumber,
+  customerName,
+  items,
+  payment,
+  delivery,
+  address,
+  notes,
+  total
+}) {
+  const totalLabel =
+    delivery === "Entrega" ? "Subtotal" : "Total";
+
+  const lines = [
+    "Olá! Este é meu pedido na Mimo Cookies 🍪💗",
+    "",
+    `*Pedido Mimo nº ${orderNumber}*`,
+    `👤 *Cliente:* ${customerName}`,
+    "",
+    "🛒 *Itens:*",
+    ...items,
+    "",
+    `💳 *Pagamento:* ${payment}`,
+    "",
+    `📍 *Recebimento:* ${delivery}`,
+    delivery === "Entrega"
+      ? `🏠 *Endereço:* ${address}`
+      : `🏠 *Retirada:* ${STORE_CONFIG.pickupAddress}`,
+    delivery === "Entrega"
+      ? "🛵 *Frete:* a calcular"
+      : "🛵 *Frete:* grátis",
+    "",
+    payment === "Pix"
+      ? "Aguardando envio da chave Pix."
+      : "Aguardando envio do link de pagamento."
+  ];
+
+  if (notes) {
+    lines.push("", `📝 *Observações:* ${notes}`);
+  }
+
+  lines.push("", `*${totalLabel}: ${BRL.format(total)}*`);
+
+  return lines.join("\n");
 }
 
 function formatLocalHour(date) {
@@ -970,57 +1002,27 @@ form.addEventListener("submit", async event => {
     const orderNumber = data.order_number;
     const subtotal = Number(data.subtotal);
 
-    const lines = [
-      `Olá! Gostaria de fazer um pedido na ${STORE_CONFIG.storeName} ${greetingEmojis}`,
-      "",
-      `*Pedido Mimo nº ${orderNumber}*`,
-      "",
-      "*Itens:*",
+    const messageItems = [...cart.entries()].map(([id, qty]) => {
+      const product = getProduct(id);
 
-      ...[...cart.entries()].map(([id, qty]) => {
-        const product = getProduct(id);
-        const emoji = PRODUCT_EMOJIS[id] || "";
+      return `${qty}x ${product.name} — ${BRL.format(
+        product.price * qty
+      )}`;
+    });
 
-        return `${emoji} ${qty}x ${product.name} — ${BRL.format(
-          product.price * qty
-        )}`;
-      }),
-
-      "",
-      `*Produtos:* ${BRL.format(subtotal)}`,
-      `*Recebimento:* ${delivery}`,
-      `*Pagamento:* ${payment}`,
-
-      delivery === "Entrega"
-        ? "*Frete:* a calcular"
-        : "*Frete:* grátis",
-
-      delivery === "Entrega"
-        ? `*Endereço:* ${address}`
-        : `*Retirada:* ${STORE_CONFIG.pickupAddress}`,
-
-      "",
-      `*Nome:* ${name}`,
-
-      notes
-        ? `*Observações:* ${notes}`
-        : "",
-
-      "",
-
-      payment === "Pix"
-        ? "Aguardando envio da chave Pix."
-        : "Aguardando envio do link de pagamento.",
-
-      delivery === "Entrega"
-        ? `*Total parcial:* ${BRL.format(subtotal)} + frete`
-        : `*Total:* ${BRL.format(subtotal)}`
-    ].filter(Boolean);
+    const whatsappMessage = buildWhatsAppMessage({
+      orderNumber,
+      customerName: name,
+      items: messageItems,
+      payment,
+      delivery,
+      address,
+      notes,
+      total: subtotal
+    });
 
     lastWhatsAppUrl =
-      `https://wa.me/${whatsapp}?text=${encodeURIComponent(
-        lines.join("\n")
-      )}`;
+      `https://wa.me/${whatsapp}?text=${encodeURIComponent(whatsappMessage)}`;
 
     lastRegisteredSignature = currentSignature;
 
