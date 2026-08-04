@@ -23,6 +23,18 @@ const CART_SWIPE_CLOSE_THRESHOLD = 80;
 const CART_SWIPE_DIRECTION_THRESHOLD = 10;
 const CART_SWIPE_HORIZONTAL_RATIO = 1.2;
 
+const WHATSAPP_EMOJIS = Object.freeze({
+  cookie: String.fromCodePoint(0x1F36A),
+  heart: String.fromCodePoint(0x1F497),
+  customer: String.fromCodePoint(0x1F464),
+  cart: String.fromCodePoint(0x1F6D2),
+  payment: String.fromCodePoint(0x1F4B3),
+  location: String.fromCodePoint(0x1F4CD),
+  home: String.fromCodePoint(0x1F3E0),
+  delivery: String.fromCodePoint(0x1F6F5),
+  notes: String.fromCodePoint(0x1F4DD)
+});
+
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
@@ -95,23 +107,23 @@ function buildWhatsAppMessage({
     delivery === "Entrega" ? "Subtotal" : "Total";
 
   const lines = [
-    "Olá! Este é meu pedido na Mimo Cookies 🍪💗",
+    `Olá! Este é meu pedido na Mimo Cookies ${WHATSAPP_EMOJIS.cookie}${WHATSAPP_EMOJIS.heart}`,
     "",
     `*Pedido Mimo nº ${orderNumber}*`,
-    `👤 *Cliente:* ${customerName}`,
+    `${WHATSAPP_EMOJIS.customer} *Cliente:* ${customerName}`,
     "",
-    "🛒 *Itens:*",
+    `${WHATSAPP_EMOJIS.cart} *Itens:*`,
     ...items,
     "",
-    `💳 *Pagamento:* ${payment}`,
+    `${WHATSAPP_EMOJIS.payment} *Pagamento:* ${payment}`,
     "",
-    `📍 *Recebimento:* ${delivery}`,
+    `${WHATSAPP_EMOJIS.location} *Recebimento:* ${delivery}`,
     delivery === "Entrega"
-      ? `🏠 *Endereço:* ${address}`
-      : `🏠 *Retirada:* ${STORE_CONFIG.pickupAddress}`,
+      ? `${WHATSAPP_EMOJIS.home} *Endereço:* ${address}`
+      : `${WHATSAPP_EMOJIS.home} *Retirada:* ${STORE_CONFIG.pickupAddress}`,
     delivery === "Entrega"
-      ? "🛵 *Frete:* a calcular"
-      : "🛵 *Frete:* grátis",
+      ? `${WHATSAPP_EMOJIS.delivery} *Frete:* a calcular`
+      : `${WHATSAPP_EMOJIS.delivery} *Frete:* grátis`,
     "",
     payment === "Pix"
       ? "Aguardando envio da chave Pix."
@@ -119,7 +131,10 @@ function buildWhatsAppMessage({
   ];
 
   if (notes) {
-    lines.push("", `📝 *Observações:* ${notes}`);
+    lines.push(
+      "",
+      `${WHATSAPP_EMOJIS.notes} *Observações:* ${notes}`
+    );
   }
 
   lines.push("", `*${totalLabel}: ${BRL.format(total)}*`);
