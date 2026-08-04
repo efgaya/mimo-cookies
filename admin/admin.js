@@ -52,6 +52,14 @@ const ordersList = document.querySelector("#orders-list");
 const refreshOrdersButton =
   document.querySelector("#refresh-orders-button");
 
+const settingsForm = document.querySelector("#settings-form");
+const storeIsPaused = document.querySelector("#store-is-paused");
+const storeReturnTime = document.querySelector("#store-return-time");
+const storePauseMessage = document.querySelector("#store-pause-message");
+const saveSettingsButton = document.querySelector("#save-settings-button");
+const settingsMessage = document.querySelector("#settings-message");
+const settingsStatus = document.querySelector("#settings-status");
+
 const tabButtons =
   document.querySelectorAll("[data-tab]");
 
@@ -62,6 +70,7 @@ let products = [];
 let orders = [];
 let productImagePreviewUrl = "";
 let isSavingProduct = false;
+let isSavingSettings = false;
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -248,6 +257,79 @@ function showDashboard(user) {
   adminEmail.textContent = user.email || "";
 }
 
+function toLocalDateTimeInput(value) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  const pad = number => String(number).padStart(2, "0");
+
+  return [
+    date.getFullYear(),
+    "-",
+    pad(date.getMonth() + 1),
+    "-",
+    pad(date.getDate()),
+    "T",
+    pad(date.getHours()),
+    ":",
+    pad(date.getMinutes())
+  ].join("");
+}
+
+function renderSettingsStatus(isPaused) {
+  settingsStatus.textContent = isPaused
+    ? "Loja em pausa"
+    : "Loja funcionando";
+  settingsStatus.classList.toggle("paused", isPaused);
+}
+
+function setSettingsSaving(saving) {
+  isSavingSettings = saving;
+
+  Array.from(settingsForm.elements).forEach(element => {
+    element.disabled = saving;
+  });
+
+  saveSettingsButton.textContent = saving
+    ? "Salvando..."
+    : "Salvar funcionamento";
+}
+
+async function loadStoreSettings() {
+  setMessage(settingsMessage);
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("store_settings")
+      .select("is_paused, return_time, pause_message")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error("A configuração da loja ainda não foi criada.");
+    }
+
+    storeIsPaused.checked = data.is_paused === true;
+    storeReturnTime.value = toLocalDateTimeInput(data.return_time);
+    storePauseMessage.value = data.pause_message || "";
+    renderSettingsStatus(storeIsPaused.checked);
+  } catch (error) {
+    console.error(error);
+    settingsStatus.textContent = "Status indisponível";
+    settingsStatus.classList.remove("paused");
+    setMessage(
+      settingsMessage,
+      "Não foi possível carregar o funcionamento. Confirme se a migration foi aplicada no Supabase.",
+      "error"
+    );
+  }
+}
+
 async function verifyAdmin() {
   const {
     data: { user },
@@ -274,7 +356,8 @@ async function verifyAdmin() {
 
   await Promise.all([
     loadProducts(),
-    loadOrders()
+    loadOrders(),
+    loadStoreSettings()
 ]);
 }
 
@@ -321,7 +404,8 @@ loginForm.addEventListener("submit", async event => {
 
   await Promise.all([
     loadProducts(),
-    loadOrders()
+    loadOrders(),
+    loadStoreSettings()
 ]);
 });
 
@@ -329,7 +413,73 @@ logoutButton.addEventListener("click", async () => {
   await supabaseClient.auth.signOut();
   productForm.reset();
   resetProductForm();
+  settingsForm.reset();
+  settingsStatus.textContent = "Carregando...";
+  settingsStatus.classList.remove("paused");
   showLogin();
+});
+
+settingsForm.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  if (isSavingSettings) return;
+
+  setMessage(settingsMessage);
+
+  let returnTime = null;
+
+  if (storeReturnTime.value) {
+    const parsedReturnTime = new Date(storeReturnTime.value);
+
+    if (Number.isNaN(parsedReturnTime.getTime())) {
+      setMessage(
+        settingsMessage,
+        "Informe um horário de retorno válido.",
+        "error"
+      );
+      return;
+    }
+
+    returnTime = parsedReturnTime.toISOString();
+  }
+
+  const values = {
+    is_paused: storeIsPaused.checked,
+    return_time: returnTime,
+    pause_message: storePauseMessage.value.trim() || null
+  };
+
+  setSettingsSaving(true);
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("store_settings")
+      .update(values)
+      .eq("id", 1)
+      .select("is_paused, return_time, pause_message")
+      .single();
+
+    if (error) throw error;
+
+    storeIsPaused.checked = data.is_paused === true;
+    storeReturnTime.value = toLocalDateTimeInput(data.return_time);
+    storePauseMessage.value = data.pause_message || "";
+    renderSettingsStatus(storeIsPaused.checked);
+    setMessage(
+      settingsMessage,
+      "Funcionamento atualizado com sucesso.",
+      "success"
+    );
+  } catch (error) {
+    console.error(error);
+    setMessage(
+      settingsMessage,
+      `Não foi possível salvar o funcionamento: ${error.message}`,
+      "error"
+    );
+  } finally {
+    setSettingsSaving(false);
+  }
 });
 
 productName.addEventListener("input", () => {
@@ -1007,6 +1157,8 @@ tabButtons.forEach(button => {
 
     if (selectedTab === "orders") {
       loadOrders();
+    } else if (selectedTab === "settings") {
+      loadStoreSettings();
     }
   });
 });

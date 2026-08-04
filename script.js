@@ -12,6 +12,11 @@ let turnstileToken = null;
 let turnstileWidgetId = null;
 let cartConfirmationTimeout = null;
 let cartConfirmationFrame = null;
+let storeSettings = {
+  isPaused: false,
+  returnTime: null,
+  pauseMessage: ""
+};
 
 const TURNSTILE_ACTION = "create_order";
 const CART_SWIPE_CLOSE_THRESHOLD = 80;
@@ -73,6 +78,126 @@ const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
 const whatsappButton = document.querySelector("#whatsapp-button");
 const turnstileMessage = document.querySelector("#turnstile-message");
+const storePauseBanner = document.querySelector("#store-pause-banner");
+const storePauseReturn = document.querySelector("#store-pause-return");
+const storePauseMessage = document.querySelector("#store-pause-message");
+const cartPauseNotice = document.querySelector("#cart-pause-notice");
+const cartPauseMessage = document.querySelector("#cart-pause-message");
+
+const DEFAULT_PAUSE_MESSAGE =
+  "Estamos fazendo uma pausa rápida. Você pode montar seu pedido normalmente e enviá-lo para atendermos assim que voltarmos.";
+
+function isSameLocalDate(firstDate, secondDate) {
+  return (
+    firstDate.getFullYear() === secondDate.getFullYear() &&
+    firstDate.getMonth() === secondDate.getMonth() &&
+    firstDate.getDate() === secondDate.getDate()
+  );
+}
+
+function formatLocalHour(date) {
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  return minutes === 0
+    ? `${hours}h`
+    : `${hours}h${String(minutes).padStart(2, "0")}`;
+}
+
+function formatReturnTime(value, now = new Date()) {
+  if (!value) return "";
+
+  const date = new Date(value);
+
+  if (
+    Number.isNaN(date.getTime()) ||
+    Number.isNaN(now.getTime())
+  ) {
+    return "";
+  }
+
+  const formattedHour = formatLocalHour(date);
+
+  if (isSameLocalDate(date, now)) {
+    return formattedHour;
+  }
+
+  const tomorrow = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate() + 1
+  );
+
+  if (isSameLocalDate(date, tomorrow)) {
+    return `amanhã às ${formattedHour}`;
+  }
+
+  const includeYear = date.getFullYear() !== now.getFullYear();
+  const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+    day: "numeric",
+    month: "long",
+    ...(includeYear ? { year: "numeric" } : {})
+  }).format(date);
+
+  return `${formattedDate}, às ${formattedHour}`;
+}
+
+function getPauseDetails() {
+  const formattedReturnTime = formatReturnTime(storeSettings.returnTime);
+  const message = storeSettings.pauseMessage || DEFAULT_PAUSE_MESSAGE;
+
+  return {
+    formattedReturnTime,
+    message,
+    returnText: formattedReturnTime
+      ? `Retorno previsto: ${formattedReturnTime}.`
+      : ""
+  };
+}
+
+function renderStoreSettings() {
+  const isPaused = storeSettings.isPaused === true;
+  const { message, returnText } = getPauseDetails();
+
+  storePauseBanner.hidden = !isPaused;
+  cartPauseNotice.hidden = !isPaused;
+
+  if (!isPaused) return;
+
+  storePauseReturn.textContent = returnText;
+  storePauseReturn.hidden = !returnText;
+  storePauseMessage.textContent = message;
+  cartPauseMessage.textContent = [returnText, message]
+    .filter(Boolean)
+    .join(" ");
+}
+
+async function loadStoreSettings() {
+  try {
+    const { data, error } = await supabaseClient
+      .from("store_settings")
+      .select("is_paused, return_time, pause_message")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) return;
+
+    storeSettings = {
+      isPaused: data.is_paused === true,
+      returnTime: data.return_time || null,
+      pauseMessage: String(data.pause_message || "").trim()
+    };
+
+    renderStoreSettings();
+  } catch (error) {
+    console.warn(
+      "Não foi possível carregar o status da loja. Mantendo o funcionamento normal.",
+      error
+    );
+  }
+}
 
 const cartConfirmation = document.createElement("div");
 cartConfirmation.className = "cart-confirmation";
@@ -733,6 +858,19 @@ form.addEventListener("submit", async event => {
 
   if (!cart.size || isSubmitting) return;
 
+  if (storeSettings.isPaused) {
+    const { message, returnText } = getPauseDetails();
+    const confirmed = window.confirm([
+      "🍪 Nosso atendimento está em pausa neste momento.",
+      returnText,
+      message,
+      "",
+      "Deseja continuar, registrar o pedido e abrir o WhatsApp?"
+    ].filter(Boolean).join("\n"));
+
+    if (!confirmed) return;
+  }
+
   const currentSignature = getCurrentOrderSignature();
 
   /*
@@ -916,4 +1054,5 @@ async function initializeStore() {
 }
 
 initializeStore();
+loadStoreSettings();
 loadTurnstileApi();

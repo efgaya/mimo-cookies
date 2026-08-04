@@ -491,6 +491,7 @@ button:disabled {
   border-radius: 16px;
   background: var(--white);
   box-shadow: var(--shadow);
+  overflow-x: auto;
 }
 
 .admin-tab {
@@ -502,6 +503,7 @@ button:disabled {
   padding: 13px 18px;
   font-weight: 700;
   cursor: pointer;
+  min-width: 110px;
 }
 
 .admin-tab:hover {
@@ -520,6 +522,37 @@ button:disabled {
 
 .orders-panel {
   margin-top: 0;
+}
+
+.settings-panel {
+  max-width: 760px;
+  margin-inline: auto;
+}
+
+.settings-status {
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #edf7ef;
+  color: #28723f;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.settings-status.paused {
+  background: #fff0bf;
+  color: var(--brown);
+}
+
+.settings-toggle {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.settings-toggle span {
+  display: grid;
+  gap: 4px;
 }
 
 @media (max-width: 760px) {

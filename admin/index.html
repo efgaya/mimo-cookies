@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="../assets/icons/favicon-512x512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="../assets/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="admin.css?v=5">
+  <link rel="stylesheet" href="admin.css?v=6">
 </head>
 
 <body>
@@ -107,6 +107,18 @@
           data-tab="products"
         >
           Produtos
+        </button>
+
+        <button
+          class="admin-tab"
+          id="settings-tab"
+          type="button"
+          role="tab"
+          aria-controls="settings-panel"
+          aria-selected="false"
+          data-tab="settings"
+        >
+          Funcionamento
         </button>
 
         <button
@@ -287,7 +299,67 @@
         </section>
 
       </div>
+      </section>
+
+      <section
+        class="tab-panel"
+        id="settings-panel"
+        role="tabpanel"
+        aria-labelledby="settings-tab"
+        data-panel="settings"
+        hidden
+      >
+        <section class="panel settings-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">Status da loja</p>
+              <h2>Funcionamento</h2>
+            </div>
+
+            <span class="settings-status" id="settings-status">
+              Carregando...
+            </span>
+          </div>
+
+          <p class="muted">
+            A pausa mantém o cardápio e o carrinho disponíveis. O cliente
+            recebe um aviso antes de enviar o pedido pelo WhatsApp.
+          </p>
+
+          <form id="settings-form">
+            <label class="checkbox-label settings-toggle">
+              <input id="store-is-paused" type="checkbox">
+              <span>
+                <strong>Pausa temporária</strong>
+                <small>Ative para exibir o aviso na loja.</small>
+              </span>
+            </label>
+
+            <label>
+              Horário de retorno (opcional)
+              <input id="store-return-time" type="datetime-local">
+              <small>Informativo; não desativa a pausa automaticamente.</small>
+            </label>
+
+            <label>
+              Mensagem (opcional)
+              <textarea
+                id="store-pause-message"
+                rows="4"
+                maxlength="500"
+                placeholder="Ex.: Voltamos logo com cookies fresquinhos!"
+              ></textarea>
+              <small>Se ficar vazia, a loja mostrará uma mensagem padrão.</small>
+            </label>
+
+            <button id="save-settings-button" type="submit">
+              Salvar funcionamento
+            </button>
+
+            <p class="message" id="settings-message" aria-live="polite"></p>
+          </form>
         </section>
+      </section>
 
       <section
         class="tab-panel active"
@@ -344,6 +416,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=1"></script>
-  <script src="admin.js?v=5"></script>
+  <script src="admin.js?v=6"></script>
 </body>
 </html>
