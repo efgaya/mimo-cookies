@@ -553,8 +553,12 @@ async function loadProducts() {
   }
 }
 
+function isProductSoldOut(product) {
+  return !product.available || product.stock === 0;
+}
+
 function getProductStatus(product) {
-  if (!product.available || product.stock === 0) {
+  if (isProductSoldOut(product)) {
     return {
       text: "ESGOTADO :(",
       className: "status-sold-out"
@@ -579,8 +583,32 @@ function getProductStatus(product) {
   };
 }
 
+function sortProductsForDisplay(products) {
+  return [...products].sort((firstProduct, secondProduct) => {
+    const soldOutComparison =
+      Number(isProductSoldOut(firstProduct)) -
+      Number(isProductSoldOut(secondProduct));
+
+    if (soldOutComparison !== 0) {
+      return soldOutComparison;
+    }
+
+    const displayOrderComparison =
+      Number(firstProduct.displayOrder ?? Number.MAX_SAFE_INTEGER) -
+      Number(secondProduct.displayOrder ?? Number.MAX_SAFE_INTEGER);
+
+    if (displayOrderComparison !== 0) {
+      return displayOrderComparison;
+    }
+
+    return String(firstProduct.id).localeCompare(String(secondProduct.id));
+  });
+}
+
 function renderProducts() {
-  grid.innerHTML = PRODUCTS.map(product => {
+  const productsForDisplay = sortProductsForDisplay(PRODUCTS);
+
+  grid.innerHTML = productsForDisplay.map(product => {
     const status = getProductStatus(product);
     const productId = escapeHtml(product.id);
     const productName = escapeHtml(product.name);
