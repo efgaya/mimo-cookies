@@ -33,7 +33,6 @@ const WHATSAPP_EMOJIS = Object.freeze({
   pin: String.fromCodePoint(0x1F4CC),
   home: String.fromCodePoint(0x1F3E0),
   delivery: String.fromCodePoint(0x1F6F5),
-  time: String.fromCodePoint(0x23F1, 0xFE0F),
   notes: String.fromCodePoint(0x1F4DD)
 });
 
@@ -92,7 +91,6 @@ const shippingEl = document.querySelector("#shipping");
 const form = document.querySelector("#checkout-form");
 const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
-const deliveryEstimateText = document.getElementById("delivery-estimate-text");
 const whatsappButton = document.querySelector("#whatsapp-button");
 const turnstileMessage = document.querySelector("#turnstile-message");
 const storePauseBanner = document.querySelector("#store-pause-banner");
@@ -142,13 +140,11 @@ function buildWhatsAppMessage({
   const receivingLines = delivery === "Entrega"
     ? [
         `${emojiPrefix("delivery")}*ENTREGA*`,
-        `${emojiPrefix("home")}${address}`,
-        `${emojiPrefix("time")}Previsão de entrega: 50 a 60 minutos`
+        `${emojiPrefix("home")}${address}`
       ]
     : [
         `${emojiPrefix("location")}*RETIRADA*`,
-        `${emojiPrefix("home")}${STORE_CONFIG.pickupAddress}`,
-        `${emojiPrefix("time")}Previsão de preparo: até 40 minutos`
+        `${emojiPrefix("home")}${STORE_CONFIG.pickupAddress}`
       ];
 
   const lines = [
@@ -1023,16 +1019,6 @@ function updateDeliveryFields() {
   addressFields.hidden = !isDelivery;
   addressInput.required = isDelivery;
   shippingEl.textContent = isDelivery ? "A calcular" : "Grátis";
-
-  if (!deliveryEstimateText) {
-    console.warn(
-      "Aviso de prazo não atualizado: #delivery-estimate-text não foi encontrado."
-    );
-  } else {
-    deliveryEstimateText.textContent = isDelivery
-      ? "⏱️ Previsão de entrega: 50 a 60 minutos"
-      : "⏱️ Pronto em até 40 minutos";
-  }
 }
 
 document

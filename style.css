@@ -478,20 +478,19 @@ legend, .checkout-form > label {
   font-size: 13px;
   color: var(--brown);
 }
-.delivery-estimate {
-  display: grid;
-  gap: 4px;
+.preparation-note {
   padding: 12px 14px;
-  border: 1px solid var(--line);
+  border: 1px solid #eadfd8;
   border-radius: 14px;
-  background: var(--surface-2);
-  color: var(--brown-dark);
+  background: #fffaf7;
+  color: #76564a;
 }
-.delivery-estimate strong { font-size: 14px; }
-.delivery-estimate small {
-  color: var(--text-soft);
-  font-size: 12px;
-  line-height: 1.4;
+.preparation-note p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 input[type="text"], textarea {
   width: 100%;
