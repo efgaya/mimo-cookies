@@ -128,23 +128,27 @@ function buildWhatsAppMessage({
   total,
   includeEmojis = true
 }) {
-  const totalLabel =
-    delivery === "Entrega" ? "Subtotal" : "Total";
   const emojiPrefix = name => includeEmojis
     ? `${WHATSAPP_EMOJIS[name]} `
     : "";
   const greetingEmojis = includeEmojis
     ? ` ${WHATSAPP_EMOJIS.cookie}${WHATSAPP_EMOJIS.heart}`
     : "";
+  const normalizedNotes = String(notes ?? "").trim();
+  const hasNotes =
+    normalizedNotes.toLocaleLowerCase("pt-BR") !== "sem observações" &&
+    normalizedNotes.length > 0;
+  const formattedTotal = BRL.format(total);
   const receivingLines = delivery === "Entrega"
     ? [
-        `${emojiPrefix("home")}*Endereço:* ${address}`,
-        `${emojiPrefix("delivery")}*Frete:* a calcular`,
-        `${emojiPrefix("time")}*Previsão de entrega:* 50 a 60 minutos`
+        `${emojiPrefix("delivery")}*ENTREGA*`,
+        `${emojiPrefix("home")}${address}`,
+        `${emojiPrefix("time")}Previsão de entrega: 50 a 60 minutos`
       ]
     : [
-        `${emojiPrefix("pin")}*Retirada:* ${STORE_CONFIG.pickupAddress}`,
-        `${emojiPrefix("time")}*Previsão de preparo:* até 40 minutos`
+        `${emojiPrefix("location")}*RETIRADA*`,
+        `${emojiPrefix("home")}${STORE_CONFIG.pickupAddress}`,
+        `${emojiPrefix("time")}Previsão de preparo: até 40 minutos`
       ];
 
   const lines = [
@@ -153,27 +157,36 @@ function buildWhatsAppMessage({
     `*Pedido Mimo nº ${orderNumber}*`,
     `${emojiPrefix("customer")}*Cliente:* ${customerName}`,
     "",
-    `${emojiPrefix("cart")}*Itens:*`,
+    `${emojiPrefix("cart")}*Itens do pedido:*`,
     ...items,
     "",
     `${emojiPrefix("payment")}*Pagamento:* ${payment}`,
     "",
-    `${emojiPrefix("location")}*Recebimento:* ${delivery}`,
-    ...receivingLines,
-    "",
-    payment === "Pix"
-      ? "Aguardando envio da chave Pix."
-      : "Aguardando envio do link de pagamento."
+    ...receivingLines
   ];
 
-  if (notes) {
+  if (hasNotes) {
     lines.push(
       "",
-      `${emojiPrefix("notes")}*Observações:* ${notes}`
+      `${emojiPrefix("notes")}*Observações:* ${normalizedNotes}`
     );
   }
 
-  lines.push("", `*${totalLabel}: ${BRL.format(total)}*`);
+  if (delivery === "Entrega") {
+    lines.push(
+      "",
+      `*Subtotal:* ${formattedTotal}`,
+      "*Frete:* a confirmar",
+      `*Total:* ${formattedTotal} + frete`
+    );
+  } else {
+    lines.push("", `*Total:* ${formattedTotal}`);
+  }
+
+  lines.push(
+    "",
+    "_Pedido sujeito à confirmação da Mimo Cookies._"
+  );
 
   return lines.join("\n");
 }
