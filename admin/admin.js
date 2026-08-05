@@ -49,6 +49,7 @@ const productsList = document.querySelector("#products-list");
 const refreshButton = document.querySelector("#refresh-button");
 
 const ordersList = document.querySelector("#orders-list");
+const ordersMessage = document.querySelector("#orders-message");
 const refreshOrdersButton =
   document.querySelector("#refresh-orders-button");
 
@@ -75,6 +76,7 @@ let orders = [];
 let productImagePreviewUrl = "";
 let isSavingProduct = false;
 let isSavingSettings = false;
+const updatingOrderIds = new Set();
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, character => ({
@@ -743,11 +745,11 @@ function renderProducts() {
 }
 
 const ORDER_STATUS_LABELS = {
-  new: "Novo",
+  new: "Pendente",
   confirmed: "Confirmado",
   preparing: "Em preparo",
   ready: "Pronto",
-  completed: "Concluído",
+  completed: "Finalizado",
   cancelled: "Cancelado"
 };
 
@@ -848,13 +850,18 @@ function renderOrders() {
 
     const canConfirm = order.status === "new";
 
+    const canComplete = order.status === "confirmed";
+
     const canCancel = ![
       "cancelled",
       "completed"
     ].includes(order.status);
 
     return `
-      <article class="order-card ${orderStatus}">
+      <article
+        class="order-card ${orderStatus}"
+        data-order-id="${orderId}"
+      >
         <div class="order-header">
           <div>
             <h3>
@@ -926,7 +933,7 @@ function renderOrders() {
         </div>
 
         ${
-          canConfirm || canCancel
+          canConfirm || canComplete || canCancel
             ? `
               <div class="order-actions">
                 ${
@@ -938,6 +945,20 @@ function renderOrders() {
                         data-confirm-order="${orderId}"
                       >
                         Confirmar e baixar estoque
+                      </button>
+                    `
+                    : ""
+                }
+
+                ${
+                  canComplete
+                    ? `
+                      <button
+                        class="complete-order-button"
+                        type="button"
+                        data-complete-order="${orderId}"
+                      >
+                        Finalizar pedido
                       </button>
                     `
                     : ""
@@ -1192,11 +1213,19 @@ supabaseClient.auth.onAuthStateChange(event => {
 });
 
 ordersList.addEventListener("click", async event => {
+  const completeButton =
+    event.target.closest("[data-complete-order]");
+
   const confirmButton =
     event.target.closest("[data-confirm-order]");
 
   const cancelButton =
     event.target.closest("[data-cancel-order]");
+
+  if (completeButton) {
+    await completeOrder(completeButton.dataset.completeOrder);
+    return;
+  }
 
   if (confirmButton) {
     await confirmOrder(confirmButton.dataset.confirmOrder);
@@ -1207,6 +1236,102 @@ ordersList.addEventListener("click", async event => {
     await cancelOrder(cancelButton.dataset.cancelOrder);
   }
 });
+
+function setOrderUpdating(orderId, updating) {
+  if (updating) {
+    updatingOrderIds.add(orderId);
+  } else {
+    updatingOrderIds.delete(orderId);
+  }
+
+  const orderCard = Array.from(
+    ordersList.querySelectorAll("[data-order-id]")
+  ).find(card => card.dataset.orderId === orderId);
+
+  if (!orderCard) return;
+
+  orderCard.querySelectorAll("button").forEach(button => {
+    button.disabled = updating;
+  });
+
+  const completeButton = orderCard.querySelector(
+    "[data-complete-order]"
+  );
+
+  if (completeButton) {
+    completeButton.textContent = updating
+      ? "Finalizando..."
+      : "Finalizar pedido";
+  }
+}
+
+async function completeOrder(orderId) {
+  if (updatingOrderIds.has(orderId)) return;
+
+  const order = orders.find(item => item.id === orderId);
+
+  if (!order || order.status !== "confirmed") {
+    setMessage(
+      ordersMessage,
+      "O pedido não está mais confirmado. Atualize a lista e tente novamente.",
+      "error"
+    );
+    return;
+  }
+
+  const confirmed = window.confirm(
+    `Marcar o Pedido Mimo nº ${order.order_number} como finalizado?`
+  );
+
+  if (!confirmed) return;
+
+  setOrderUpdating(orderId, true);
+  setMessage(ordersMessage, "Finalizando pedido...", "loading");
+
+  let data;
+  let error;
+
+  try {
+    ({ data, error } = await supabaseClient.rpc(
+      "complete_order",
+      {
+        p_order_id: orderId
+      }
+    ));
+  } catch (requestError) {
+    error = requestError;
+  }
+
+  if (error) {
+    console.error(error);
+    setOrderUpdating(orderId, false);
+    setMessage(
+      ordersMessage,
+      `Não foi possível finalizar o pedido: ${error.message}`,
+      "error"
+    );
+    return;
+  }
+
+  if (data !== true) {
+    setOrderUpdating(orderId, false);
+    setMessage(
+      ordersMessage,
+      "O pedido não está mais confirmado. Atualize a lista e tente novamente.",
+      "error"
+    );
+    await loadOrders();
+    return;
+  }
+
+  await loadOrders();
+  updatingOrderIds.delete(orderId);
+  setMessage(
+    ordersMessage,
+    `Pedido Mimo nº ${order.order_number} finalizado com sucesso.`,
+    "success"
+  );
+}
 
 async function confirmOrder(orderId) {
   const order = orders.find(item => item.id === orderId);

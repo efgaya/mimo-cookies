@@ -107,6 +107,10 @@ A versão atual oferece:
 
 Quando as faixas de entrega forem definidas, o cálculo pode ser adicionado ao `script.js`.
 
+## Regra futura de relatórios
+
+Quando os relatórios forem implementados, pedidos com status `completed` devem contar como vendas concluídas. Pedidos `confirmed` representam pedidos aceitos, mas ainda não necessariamente concluídos, e pedidos `cancelled` não devem contar como vendas.
+
 
 ## Informações da loja
 

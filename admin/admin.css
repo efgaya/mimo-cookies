@@ -360,6 +360,11 @@ button:disabled {
   opacity: 0.62;
 }
 
+.order-card.completed {
+  border-color: #b9d8ce;
+  background: #fbfffd;
+}
+
 .order-header {
   display: flex;
   justify-content: space-between;
@@ -476,6 +481,10 @@ button:disabled {
   background: #28723f;
 }
 
+.order-actions .complete-order-button {
+  background: #176b62;
+}
+
 .order-actions .cancel-order-button {
   border: 1px solid #efd0d0;
   background: #fff6f6;
@@ -492,6 +501,10 @@ button:disabled {
   background: var(--white);
   box-shadow: var(--shadow);
   overflow-x: auto;
+}
+
+.orders-message {
+  margin-top: 16px;
 }
 
 .admin-tab {
