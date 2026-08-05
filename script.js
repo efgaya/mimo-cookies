@@ -30,8 +30,10 @@ const WHATSAPP_EMOJIS = Object.freeze({
   cart: String.fromCodePoint(0x1F6D2),
   payment: String.fromCodePoint(0x1F4B3),
   location: String.fromCodePoint(0x1F4CD),
+  pin: String.fromCodePoint(0x1F4CC),
   home: String.fromCodePoint(0x1F3E0),
   delivery: String.fromCodePoint(0x1F6F5),
+  time: String.fromCodePoint(0x23F1, 0xFE0F),
   notes: String.fromCodePoint(0x1F4DD)
 });
 
@@ -90,6 +92,7 @@ const shippingEl = document.querySelector("#shipping");
 const form = document.querySelector("#checkout-form");
 const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
+const deliveryEstimateText = document.querySelector("#delivery-estimate-text");
 const whatsappButton = document.querySelector("#whatsapp-button");
 const turnstileMessage = document.querySelector("#turnstile-message");
 const storePauseBanner = document.querySelector("#store-pause-banner");
@@ -133,6 +136,16 @@ function buildWhatsAppMessage({
   const greetingEmojis = includeEmojis
     ? ` ${WHATSAPP_EMOJIS.cookie}${WHATSAPP_EMOJIS.heart}`
     : "";
+  const receivingLines = delivery === "Entrega"
+    ? [
+        `${emojiPrefix("home")}*Endereço:* ${address}`,
+        `${emojiPrefix("delivery")}*Frete:* a calcular`,
+        `${emojiPrefix("time")}*Previsão de entrega:* 50 a 60 minutos`
+      ]
+    : [
+        `${emojiPrefix("pin")}*Retirada:* ${STORE_CONFIG.pickupAddress}`,
+        `${emojiPrefix("time")}*Previsão de preparo:* até 40 minutos`
+      ];
 
   const lines = [
     `Olá! Este é meu pedido na Mimo Cookies${greetingEmojis}`,
@@ -146,12 +159,7 @@ function buildWhatsAppMessage({
     `${emojiPrefix("payment")}*Pagamento:* ${payment}`,
     "",
     `${emojiPrefix("location")}*Recebimento:* ${delivery}`,
-    delivery === "Entrega"
-      ? `${emojiPrefix("home")}*Endereço:* ${address}`
-      : `${emojiPrefix("home")}*Retirada:* ${STORE_CONFIG.pickupAddress}`,
-    delivery === "Entrega"
-      ? `${emojiPrefix("delivery")}*Frete:* a calcular`
-      : `${emojiPrefix("delivery")}*Frete:* grátis`,
+    ...receivingLines,
     "",
     payment === "Pix"
       ? "Aguardando envio da chave Pix."
@@ -1002,6 +1010,9 @@ function updateDeliveryFields() {
   addressFields.hidden = !isDelivery;
   addressInput.required = isDelivery;
   shippingEl.textContent = isDelivery ? "A calcular" : "Grátis";
+  deliveryEstimateText.textContent = isDelivery
+    ? "⏱️ Previsão de entrega: 50 a 60 minutos"
+    : "⏱️ Pronto em até 40 minutos";
 }
 
 document
