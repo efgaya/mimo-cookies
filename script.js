@@ -92,7 +92,7 @@ const shippingEl = document.querySelector("#shipping");
 const form = document.querySelector("#checkout-form");
 const addressFields = document.querySelector("#address-fields");
 const addressInput = document.querySelector("#customer-address");
-const deliveryEstimateText = document.querySelector("#delivery-estimate-text");
+const deliveryEstimateText = document.getElementById("delivery-estimate-text");
 const whatsappButton = document.querySelector("#whatsapp-button");
 const turnstileMessage = document.querySelector("#turnstile-message");
 const storePauseBanner = document.querySelector("#store-pause-banner");
@@ -1010,9 +1010,16 @@ function updateDeliveryFields() {
   addressFields.hidden = !isDelivery;
   addressInput.required = isDelivery;
   shippingEl.textContent = isDelivery ? "A calcular" : "Grátis";
-  deliveryEstimateText.textContent = isDelivery
-    ? "⏱️ Previsão de entrega: 50 a 60 minutos"
-    : "⏱️ Pronto em até 40 minutos";
+
+  if (!deliveryEstimateText) {
+    console.warn(
+      "Aviso de prazo não atualizado: #delivery-estimate-text não foi encontrado."
+    );
+  } else {
+    deliveryEstimateText.textContent = isDelivery
+      ? "⏱️ Previsão de entrega: 50 a 60 minutos"
+      : "⏱️ Pronto em até 40 minutos";
+  }
 }
 
 document
