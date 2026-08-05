@@ -56,6 +56,10 @@ const settingsForm = document.querySelector("#settings-form");
 const storeIsPaused = document.querySelector("#store-is-paused");
 const storeReturnTime = document.querySelector("#store-return-time");
 const storePauseMessage = document.querySelector("#store-pause-message");
+const storeClosedToday = document.querySelector("#store-closed-today");
+const clearReturnTimeButton = document.querySelector(
+  "#clear-return-time-button"
+);
 const saveSettingsButton = document.querySelector("#save-settings-button");
 const settingsMessage = document.querySelector("#settings-message");
 const settingsStatus = document.querySelector("#settings-status");
@@ -279,11 +283,73 @@ function toLocalDateTimeInput(value) {
   ].join("");
 }
 
-function renderSettingsStatus(isPaused) {
-  settingsStatus.textContent = isPaused
-    ? "Loja em pausa"
-    : "Loja funcionando";
-  settingsStatus.classList.toggle("paused", isPaused);
+function getTomorrowAtNine() {
+  const tomorrowAtNine = new Date();
+
+  tomorrowAtNine.setDate(tomorrowAtNine.getDate() + 1);
+  tomorrowAtNine.setHours(9, 0, 0, 0);
+
+  return tomorrowAtNine;
+}
+
+function isTomorrowAtNine(value, now = new Date()) {
+  if (!value) return false;
+
+  const returnDate = new Date(value);
+  const tomorrow = new Date(now);
+
+  if (Number.isNaN(returnDate.getTime())) return false;
+
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  return (
+    returnDate.getFullYear() === tomorrow.getFullYear() &&
+    returnDate.getMonth() === tomorrow.getMonth() &&
+    returnDate.getDate() === tomorrow.getDate() &&
+    returnDate.getHours() === 9 &&
+    returnDate.getMinutes() === 0
+  );
+}
+
+function getSettingsState(isPaused, returnTime, now = new Date()) {
+  if (!isPaused) return "open";
+
+  const returnDate = new Date(returnTime);
+
+  if (!returnTime || Number.isNaN(returnDate.getTime())) return "paused";
+
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const returnDay = new Date(
+    returnDate.getFullYear(),
+    returnDate.getMonth(),
+    returnDate.getDate()
+  );
+
+  return returnDay > today ? "closed" : "paused";
+}
+
+function renderSettingsStatus(settingsState) {
+  settingsStatus.textContent = settingsState === "closed"
+    ? "Loja fechada"
+    : settingsState === "paused"
+      ? "Loja em pausa"
+      : "Loja funcionando";
+  settingsStatus.classList.toggle("paused", settingsState !== "open");
+}
+
+function syncStoreSettingsForm(data) {
+  const isPaused = data.is_paused === true;
+  const settingsState = getSettingsState(isPaused, data.return_time);
+
+  storeIsPaused.checked = settingsState === "paused";
+  storeClosedToday.checked = settingsState === "closed";
+  storeReturnTime.value = toLocalDateTimeInput(data.return_time);
+  storePauseMessage.value = data.pause_message || "";
+  renderSettingsStatus(settingsState);
 }
 
 function setSettingsSaving(saving) {
@@ -296,6 +362,38 @@ function setSettingsSaving(saving) {
   saveSettingsButton.textContent = saving
     ? "Salvando..."
     : "Salvar funcionamento";
+}
+
+async function saveStoreSettings(values, successMessage) {
+  setSettingsSaving(true);
+  setMessage(settingsMessage, "Salvando...", "loading");
+
+  try {
+    const { data, error } = await supabaseClient
+      .from("store_settings")
+      .update(values)
+      .eq("id", 1)
+      .select("is_paused, return_time, pause_message")
+      .single();
+
+    if (error) throw error;
+
+    syncStoreSettingsForm(data);
+    setMessage(settingsMessage, successMessage, "success");
+
+    return true;
+  } catch (error) {
+    console.error(error);
+    setMessage(
+      settingsMessage,
+      `Não foi possível salvar o funcionamento: ${error.message}`,
+      "error"
+    );
+
+    return false;
+  } finally {
+    setSettingsSaving(false);
+  }
 }
 
 async function loadStoreSettings() {
@@ -314,10 +412,7 @@ async function loadStoreSettings() {
       throw new Error("A configuração da loja ainda não foi criada.");
     }
 
-    storeIsPaused.checked = data.is_paused === true;
-    storeReturnTime.value = toLocalDateTimeInput(data.return_time);
-    storePauseMessage.value = data.pause_message || "";
-    renderSettingsStatus(storeIsPaused.checked);
+    syncStoreSettingsForm(data);
   } catch (error) {
     console.error(error);
     settingsStatus.textContent = "Status indisponível";
@@ -444,41 +539,88 @@ settingsForm.addEventListener("submit", async event => {
   }
 
   const values = {
-    is_paused: storeIsPaused.checked,
+    is_paused: storeIsPaused.checked || storeClosedToday.checked,
     return_time: returnTime,
     pause_message: storePauseMessage.value.trim() || null
   };
 
-  setSettingsSaving(true);
+  await saveStoreSettings(
+    values,
+    "Funcionamento atualizado com sucesso."
+  );
+});
 
-  try {
-    const { data, error } = await supabaseClient
-      .from("store_settings")
-      .update(values)
-      .eq("id", 1)
-      .select("is_paused, return_time, pause_message")
-      .single();
+storeIsPaused.addEventListener("change", () => {
+  if (!storeIsPaused.checked) return;
 
-    if (error) throw error;
+  storeClosedToday.checked = false;
 
-    storeIsPaused.checked = data.is_paused === true;
-    storeReturnTime.value = toLocalDateTimeInput(data.return_time);
-    storePauseMessage.value = data.pause_message || "";
-    renderSettingsStatus(storeIsPaused.checked);
+  if (isTomorrowAtNine(storeReturnTime.value)) {
+    storeReturnTime.value = "";
+  }
+});
+
+storeClosedToday.addEventListener("change", async () => {
+  if (isSavingSettings) return;
+
+  if (!storeClosedToday.checked) {
     setMessage(
       settingsMessage,
-      "Funcionamento atualizado com sucesso.",
-      "success"
+      "Atalho desmarcado. Para reabrir a loja, ajuste a pausa e salve o funcionamento."
     );
-  } catch (error) {
-    console.error(error);
-    setMessage(
-      settingsMessage,
-      `Não foi possível salvar o funcionamento: ${error.message}`,
-      "error"
-    );
-  } finally {
-    setSettingsSaving(false);
+    return;
+  }
+
+  const previousIsPaused = storeIsPaused.checked;
+  const previousReturnTime = storeReturnTime.value;
+
+  storeIsPaused.checked = false;
+  setMessage(settingsMessage);
+
+  const tomorrowAtNine = getTomorrowAtNine();
+  const values = {
+    is_paused: true,
+    return_time: tomorrowAtNine.toISOString(),
+    pause_message: storePauseMessage.value.trim() || null
+  };
+
+  const saved = await saveStoreSettings(
+    values,
+    "Loja fechada por hoje. Retorno definido para amanhã às 9h."
+  );
+
+  if (!saved) {
+    storeClosedToday.checked = false;
+    storeIsPaused.checked = previousIsPaused;
+    storeReturnTime.value = previousReturnTime;
+  }
+});
+
+clearReturnTimeButton.addEventListener("click", async () => {
+  if (isSavingSettings) return;
+
+  const previousIsPaused = storeIsPaused.checked;
+  const previousIsClosedToday = storeClosedToday.checked;
+  const previousReturnTime = storeReturnTime.value;
+  const shouldRemainPaused = previousIsPaused || previousIsClosedToday;
+
+  storeReturnTime.value = "";
+  storeClosedToday.checked = false;
+  storeIsPaused.checked = shouldRemainPaused;
+
+  const saved = await saveStoreSettings(
+    {
+      is_paused: shouldRemainPaused,
+      return_time: null,
+      pause_message: storePauseMessage.value.trim() || null
+    },
+    "Horário de retorno removido."
+  );
+
+  if (!saved) {
+    storeIsPaused.checked = previousIsPaused;
+    storeClosedToday.checked = previousIsClosedToday;
+    storeReturnTime.value = previousReturnTime;
   }
 });
 

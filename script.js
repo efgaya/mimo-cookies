@@ -93,13 +93,18 @@ const addressInput = document.querySelector("#customer-address");
 const whatsappButton = document.querySelector("#whatsapp-button");
 const turnstileMessage = document.querySelector("#turnstile-message");
 const storePauseBanner = document.querySelector("#store-pause-banner");
+const storePauseTitle = document.querySelector("#store-pause-title");
 const storePauseReturn = document.querySelector("#store-pause-return");
 const storePauseMessage = document.querySelector("#store-pause-message");
 const cartPauseNotice = document.querySelector("#cart-pause-notice");
+const cartPauseTitle = document.querySelector("#cart-pause-title");
 const cartPauseMessage = document.querySelector("#cart-pause-message");
 
+const STORE_NOTICE_ICON = "🍪";
 const DEFAULT_PAUSE_MESSAGE =
   "Estamos fazendo uma pausa rápida. Você pode montar seu pedido normalmente e enviá-lo para atendermos assim que voltarmos.";
+const CLOSED_STORE_MESSAGE =
+  "Você pode montar seu pedido normalmente e deixá-lo no carrinho, mas o envio ficará disponível somente quando a loja reabrir.";
 
 function isSameLocalDate(firstDate, secondDate) {
   return (
@@ -212,6 +217,37 @@ function formatReturnTime(value, now = new Date()) {
   return `${formattedDate}, às ${formattedHour}`;
 }
 
+function getStoreState(now = new Date()) {
+  if (storeSettings.isPaused !== true) return "open";
+
+  const returnDate = new Date(storeSettings.returnTime);
+
+  if (Number.isNaN(returnDate.getTime())) return "paused";
+
+  const today = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const returnDay = new Date(
+    returnDate.getFullYear(),
+    returnDate.getMonth(),
+    returnDate.getDate()
+  );
+
+  return returnDay > today ? "closed" : "paused";
+}
+
+function getClosedDetails() {
+  const formattedReturnTime = formatReturnTime(storeSettings.returnTime);
+
+  return {
+    formattedReturnTime,
+    title: `${STORE_NOTICE_ICON} Loja fechada! Retornamos ${formattedReturnTime}!`,
+    buttonText: `Pedidos fechados até ${formattedReturnTime}`
+  };
+}
+
 function getPauseDetails() {
   const formattedReturnTime = formatReturnTime(storeSettings.returnTime);
   const message = storeSettings.pauseMessage || DEFAULT_PAUSE_MESSAGE;
@@ -226,20 +262,40 @@ function getPauseDetails() {
 }
 
 function renderStoreSettings() {
-  const isPaused = storeSettings.isPaused === true;
+  const storeState = getStoreState();
+  const isPaused = storeState !== "open";
   const { message, returnText } = getPauseDetails();
 
   storePauseBanner.hidden = !isPaused;
   cartPauseNotice.hidden = !isPaused;
 
-  if (!isPaused) return;
+  if (!isPaused) {
+    refreshWhatsappButton();
+    return;
+  }
 
+  if (storeState === "closed") {
+    const { title } = getClosedDetails();
+
+    storePauseTitle.textContent = title;
+    storePauseReturn.textContent = "";
+    storePauseReturn.hidden = true;
+    storePauseMessage.textContent = CLOSED_STORE_MESSAGE;
+    cartPauseTitle.textContent = title;
+    cartPauseMessage.textContent = CLOSED_STORE_MESSAGE;
+    refreshWhatsappButton();
+    return;
+  }
+
+  storePauseTitle.textContent = `${STORE_NOTICE_ICON} Pausa rapidinha!`;
   storePauseReturn.textContent = returnText;
   storePauseReturn.hidden = !returnText;
   storePauseMessage.textContent = message;
+  cartPauseTitle.textContent = `${STORE_NOTICE_ICON} Atendimento em pausa`;
   cartPauseMessage.textContent = [returnText, message]
     .filter(Boolean)
     .join(" ");
+  refreshWhatsappButton();
 }
 
 async function loadStoreSettings() {
@@ -476,6 +532,14 @@ function refreshWhatsappButton() {
   if (isSubmitting) {
     whatsappButton.disabled = true;
     whatsappButton.textContent = "Registrando pedido...";
+    return;
+  }
+
+  if (getStoreState() === "closed") {
+    const { buttonText } = getClosedDetails();
+
+    whatsappButton.disabled = true;
+    whatsappButton.textContent = buttonText;
     return;
   }
 
@@ -956,7 +1020,16 @@ form.addEventListener("submit", async event => {
 
   if (!cart.size || isSubmitting) return;
 
-  if (storeSettings.isPaused) {
+  const storeState = getStoreState();
+
+  if (storeState === "closed") {
+    const { title } = getClosedDetails();
+
+    alert(`${title}\n\n${CLOSED_STORE_MESSAGE}`);
+    return;
+  }
+
+  if (storeState === "paused") {
     const { message, returnText } = getPauseDetails();
     const confirmed = window.confirm([
       "🍪 Nosso atendimento está em pausa neste momento.",

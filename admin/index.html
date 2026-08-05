@@ -335,11 +335,27 @@
               </span>
             </label>
 
+            <label class="checkbox-label settings-toggle">
+              <input id="store-closed-today" type="checkbox">
+              <span>
+                <strong>Fechado por hoje</strong>
+                <small>A loja volta a receber pedidos amanhã às 9h.</small>
+              </span>
+            </label>
+
             <label>
               Horário de retorno (opcional)
               <input id="store-return-time" type="datetime-local">
               <small>Informativo; não desativa a pausa automaticamente.</small>
             </label>
+
+            <button
+              class="secondary-button"
+              id="clear-return-time-button"
+              type="button"
+            >
+              Limpar horário
+            </button>
 
             <label>
               Mensagem (opcional)
@@ -416,6 +432,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=1"></script>
-  <script src="admin.js?v=6"></script>
+  <script src="admin.js?v=8"></script>
 </body>
 </html>
