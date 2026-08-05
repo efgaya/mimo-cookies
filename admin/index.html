@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="512x512" href="../assets/icons/favicon-512x512.png">
   <link rel="apple-touch-icon" sizes="180x180" href="../assets/icons/apple-touch-icon.png">
 
-  <link rel="stylesheet" href="admin.css?v=7">
+  <link rel="stylesheet" href="admin.css?v=8">
 </head>
 
 <body>
@@ -401,6 +401,41 @@
     </button>
   </div>
 
+  <fieldset class="order-filters" id="order-status-filters">
+    <legend>Filtrar por status</legend>
+
+    <div class="order-filter-options">
+      <label class="order-filter-option" for="order-filter-new">
+        <input id="order-filter-new" type="checkbox" value="new">
+        <span>Pendente (<span data-order-status-count="new">0</span>)</span>
+      </label>
+
+      <label class="order-filter-option" for="order-filter-confirmed">
+        <input id="order-filter-confirmed" type="checkbox" value="confirmed">
+        <span>Confirmado (<span data-order-status-count="confirmed">0</span>)</span>
+      </label>
+
+      <label class="order-filter-option" for="order-filter-completed">
+        <input id="order-filter-completed" type="checkbox" value="completed">
+        <span>Finalizado (<span data-order-status-count="completed">0</span>)</span>
+      </label>
+
+      <label class="order-filter-option" for="order-filter-cancelled">
+        <input id="order-filter-cancelled" type="checkbox" value="cancelled">
+        <span>Cancelado (<span data-order-status-count="cancelled">0</span>)</span>
+      </label>
+    </div>
+
+    <div class="order-filter-actions">
+      <button class="text-button" type="button" data-order-filter-action="all">
+        Mostrar todos
+      </button>
+      <button class="text-button" type="button" data-order-filter-action="active">
+        Somente ativos
+      </button>
+    </div>
+  </fieldset>
+
   <div class="orders-list" id="orders-list">
     <p class="muted">Carregando pedidos...</p>
   </div>
@@ -434,6 +469,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../supabase-config.js?v=1"></script>
-  <script src="admin.js?v=9"></script>
+  <script src="admin.js?v=11"></script>
 </body>
 </html>

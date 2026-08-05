@@ -349,6 +349,70 @@ button:disabled {
   margin-top: 24px;
 }
 
+.order-filters {
+  display: grid;
+  gap: 14px;
+  margin: 24px 0 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--cream);
+}
+
+.order-filters legend {
+  padding: 0 6px;
+  color: var(--brown-dark);
+  font-weight: 700;
+}
+
+.order-filter-options,
+.order-filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.order-filter-option {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.order-filter-option input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--brown);
+  cursor: pointer;
+}
+
+.order-filter-option input:focus-visible,
+.order-filter-actions button:focus-visible {
+  outline: 3px solid rgba(149, 101, 85, 0.35);
+  outline-offset: 3px;
+}
+
+.order-filter-actions {
+  gap: 12px;
+}
+
+.order-filter-actions .text-button {
+  font-size: 0.84rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.orders-empty-state {
+  margin: 0;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  text-align: center;
+}
+
 .order-card {
   padding: 20px;
   border: 1px solid var(--border);
@@ -422,6 +486,11 @@ button:disabled {
 .order-status.cancelled {
   background: #f5d4d4;
   color: #982e2e;
+}
+
+.order-status.unknown {
+  background: #ece8e6;
+  color: var(--muted);
 }
 
 .order-details {

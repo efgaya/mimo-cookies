@@ -1,6 +1,18 @@
 const ADMIN_USER_ID = "dcf88d88-cb5e-4378-89e1-ba1020cb20e8";
 const PRODUCT_IMAGES_BUCKET = "product-images";
 const MAX_PRODUCT_IMAGE_SIZE = 5 * 1024 * 1024;
+const ORDER_STATUS_FILTER_STORAGE_KEY =
+  "mimo-admin-order-status-filters-v1";
+const ORDER_STATUS_FILTER_VALUES = Object.freeze([
+  "new",
+  "confirmed",
+  "completed",
+  "cancelled"
+]);
+const ACTIVE_ORDER_STATUS_VALUES = Object.freeze([
+  "new",
+  "confirmed"
+]);
 const PRODUCT_IMAGE_EXTENSIONS = Object.freeze({
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -52,6 +64,14 @@ const ordersList = document.querySelector("#orders-list");
 const ordersMessage = document.querySelector("#orders-message");
 const refreshOrdersButton =
   document.querySelector("#refresh-orders-button");
+const orderStatusFilters =
+  document.querySelector("#order-status-filters");
+const orderStatusFilterInputs = Array.from(
+  orderStatusFilters.querySelectorAll('input[type="checkbox"]')
+);
+const orderStatusCountElements = Array.from(
+  orderStatusFilters.querySelectorAll("[data-order-status-count]")
+);
 
 const settingsForm = document.querySelector("#settings-form");
 const storeIsPaused = document.querySelector("#store-is-paused");
@@ -73,6 +93,7 @@ const tabPanels =
 
 let products = [];
 let orders = [];
+let selectedOrderStatuses = loadOrderStatusFilters();
 let productImagePreviewUrl = "";
 let isSavingProduct = false;
 let isSavingSettings = false;
@@ -760,6 +781,87 @@ const PAYMENT_STATUS_LABELS = {
   cancelled: "Cancelado"
 };
 
+function loadOrderStatusFilters() {
+  try {
+    const storedValue = localStorage.getItem(
+      ORDER_STATUS_FILTER_STORAGE_KEY
+    );
+
+    if (storedValue === null) {
+      return new Set(ACTIVE_ORDER_STATUS_VALUES);
+    }
+
+    const parsedValue = JSON.parse(storedValue);
+
+    if (
+      !Array.isArray(parsedValue)
+      || parsedValue.some(status => typeof status !== "string")
+    ) {
+      return new Set(ACTIVE_ORDER_STATUS_VALUES);
+    }
+
+    return new Set(
+      parsedValue.filter(status =>
+        ORDER_STATUS_FILTER_VALUES.includes(status)
+      )
+    );
+  } catch (error) {
+    console.warn("Não foi possível recuperar os filtros de pedidos.", error);
+    return new Set(ACTIVE_ORDER_STATUS_VALUES);
+  }
+}
+
+function saveOrderStatusFilters() {
+  try {
+    localStorage.setItem(
+      ORDER_STATUS_FILTER_STORAGE_KEY,
+      JSON.stringify(
+        ORDER_STATUS_FILTER_VALUES.filter(status =>
+          selectedOrderStatuses.has(status)
+        )
+      )
+    );
+  } catch (error) {
+    console.warn("Não foi possível salvar os filtros de pedidos.", error);
+  }
+}
+
+function updateOrderStatusFilterControls() {
+  orderStatusFilterInputs.forEach(input => {
+    input.checked = selectedOrderStatuses.has(input.value);
+  });
+
+  const statusCounts = orders.reduce((counts, order) => {
+    if (ORDER_STATUS_FILTER_VALUES.includes(order.status)) {
+      counts[order.status] += 1;
+    }
+
+    return counts;
+  }, Object.fromEntries(
+    ORDER_STATUS_FILTER_VALUES.map(status => [status, 0])
+  ));
+
+  orderStatusCountElements.forEach(element => {
+    element.textContent = statusCounts[
+      element.dataset.orderStatusCount
+    ];
+  });
+}
+
+function getFilteredOrders() {
+  const allVisibleStatusesSelected = ORDER_STATUS_FILTER_VALUES.every(
+    status => selectedOrderStatuses.has(status)
+  );
+
+  return orders.filter(order => {
+    if (ORDER_STATUS_FILTER_VALUES.includes(order.status)) {
+      return selectedOrderStatuses.has(order.status);
+    }
+
+    return allVisibleStatusesSelected;
+  });
+}
+
 function formatDate(dateValue) {
   if (!dateValue) return "—";
 
@@ -819,6 +921,17 @@ async function loadOrders() {
 }
 
 function renderOrders() {
+  updateOrderStatusFilterControls();
+
+  if (!selectedOrderStatuses.size) {
+    ordersList.innerHTML = `
+      <p class="muted orders-empty-state">
+        Nenhum status selecionado. Marque ao menos um filtro para exibir pedidos.
+      </p>
+    `;
+    return;
+  }
+
   if (!orders.length) {
     ordersList.innerHTML = `
       <p class="muted">
@@ -828,7 +941,18 @@ function renderOrders() {
     return;
   }
 
-  ordersList.innerHTML = orders.map(order => {
+  const filteredOrders = getFilteredOrders();
+
+  if (!filteredOrders.length) {
+    ordersList.innerHTML = `
+      <p class="muted orders-empty-state">
+        Nenhum pedido corresponde aos filtros selecionados.
+      </p>
+    `;
+    return;
+  }
+
+  ordersList.innerHTML = filteredOrders.map(order => {
     const items = order.order_items || [];
     const orderId = escapeHtml(order.id);
     const orderStatus = Object.hasOwn(
@@ -875,7 +999,11 @@ function renderOrders() {
           </div>
 
           <span class="order-status ${orderStatus}">
-            ${escapeHtml(ORDER_STATUS_LABELS[order.status] || order.status)}
+            ${escapeHtml(
+              ORDER_STATUS_LABELS[order.status]
+                || order.status
+                || "Desconhecido"
+            )}
           </span>
         </div>
 
@@ -1394,6 +1522,36 @@ async function cancelOrder(orderId) {
 }
 
 refreshOrdersButton.addEventListener("click", loadOrders);
+
+orderStatusFilters.addEventListener("change", event => {
+  if (!event.target.matches('input[type="checkbox"]')) return;
+
+  if (event.target.checked) {
+    selectedOrderStatuses.add(event.target.value);
+  } else {
+    selectedOrderStatuses.delete(event.target.value);
+  }
+
+  saveOrderStatusFilters();
+  renderOrders();
+});
+
+orderStatusFilters.addEventListener("click", event => {
+  const actionButton = event.target.closest("[data-order-filter-action]");
+
+  if (!actionButton) return;
+
+  selectedOrderStatuses = new Set(
+    actionButton.dataset.orderFilterAction === "all"
+      ? ORDER_STATUS_FILTER_VALUES
+      : ACTIVE_ORDER_STATUS_VALUES
+  );
+
+  saveOrderStatusFilters();
+  renderOrders();
+});
+
+updateOrderStatusFilterControls();
 
 tabButtons.forEach(button => {
   button.addEventListener("click", () => {
