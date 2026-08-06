@@ -30,6 +30,7 @@ const {
   getTomorrowAtNine,
   normalizeStoreMode,
   storeLocalDateTimeToDate,
+  toValidDate,
   toStoreLocalDateTimeInput
 } = MimoStoreStatus;
 
@@ -336,8 +337,10 @@ function syncStoreSettingsForm(data) {
   storePauseMessage.value = data.pause_message || "";
   renderSettingsStatus(settingsState);
 
-  const returnDate = new Date(data.return_time);
-  const delay = returnDate.getTime() - Date.now();
+  const returnDate = toValidDate(data.return_time);
+  const delay = returnDate
+    ? returnDate.getTime() - Date.now()
+    : 0;
 
   if (settingsState !== STORE_MODES.OPEN && delay > 0) {
     settingsExpirationTimer = window.setTimeout(() => {

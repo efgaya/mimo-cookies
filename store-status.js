@@ -20,10 +20,25 @@
     hourCycle: "h23"
   });
 
-  function getStoreDateTimeParts(value) {
+  function toValidDate(value) {
+    const hasNoValue =
+      value === null ||
+      value === undefined ||
+      value === false ||
+      value === 0 ||
+      (typeof value === "string" && value.trim() === "");
+
+    if (hasNoValue) return null;
+
     const date = value instanceof Date ? value : new Date(value);
 
-    if (Number.isNaN(date.getTime())) return null;
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function getStoreDateTimeParts(value) {
+    const date = toValidDate(value);
+
+    if (!date) return null;
 
     return Object.fromEntries(
       storeDateTimeFormatter
@@ -113,13 +128,10 @@
     if (settings?.isPaused !== true) return STORE_MODES.OPEN;
 
     const mode = normalizeStoreMode(settings.mode, true);
-    const returnDate = settings.returnTime
-      ? new Date(settings.returnTime)
-      : null;
+    const returnDate = toValidDate(settings.returnTime);
 
     if (
       returnDate &&
-      !Number.isNaN(returnDate.getTime()) &&
       now.getTime() >= returnDate.getTime()
     ) {
       return STORE_MODES.OPEN;
@@ -151,6 +163,7 @@
     getTomorrowAtNine,
     normalizeStoreMode,
     storeLocalDateTimeToDate,
+    toValidDate,
     toStoreLocalDateTimeInput
   });
 

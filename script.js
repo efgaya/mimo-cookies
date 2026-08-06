@@ -7,7 +7,8 @@ const {
   STORE_TIME_ZONE,
   getStoreDateTimeParts,
   getStoreState: resolveStoreState,
-  normalizeStoreMode
+  normalizeStoreMode,
+  toValidDate
 } = MimoStoreStatus;
 
 const cart = new Map();
@@ -214,24 +215,18 @@ function formatLocalHour(date) {
 }
 
 function formatReturnTime(value, now = new Date()) {
-  if (!value) return "";
+  const date = toValidDate(value);
+  const currentDate = toValidDate(now);
 
-  const date = new Date(value);
-
-  if (
-    Number.isNaN(date.getTime()) ||
-    Number.isNaN(now.getTime())
-  ) {
-    return "";
-  }
+  if (!date || !currentDate) return "";
 
   const formattedHour = formatLocalHour(date);
 
-  if (isSameStoreDate(date, now)) {
+  if (isSameStoreDate(date, currentDate)) {
     return formattedHour;
   }
 
-  const nowParts = getStoreDateTimeParts(now);
+  const nowParts = getStoreDateTimeParts(currentDate);
   const tomorrow = nowParts && new Date(Date.UTC(
     nowParts.year,
     nowParts.month - 1,
@@ -260,7 +255,7 @@ function getStoreState(now = new Date()) {
 }
 
 function getClosedDetails(now = new Date()) {
-  const returnDate = new Date(storeSettings.returnTime);
+  const returnDate = toValidDate(storeSettings.returnTime);
   const formattedReturnTime = formatReturnTime(storeSettings.returnTime);
   const returnHour = formatLocalHour(returnDate);
   let returnText = "";
@@ -317,9 +312,9 @@ function renderStoreSettings() {
     return;
   }
 
-  const returnDate = new Date(storeSettings.returnTime);
+  const returnDate = toValidDate(storeSettings.returnTime);
 
-  if (!Number.isNaN(returnDate.getTime())) {
+  if (returnDate) {
     const delay = returnDate.getTime() - Date.now();
 
     if (delay > 0) {

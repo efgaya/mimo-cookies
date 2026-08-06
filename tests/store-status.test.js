@@ -7,6 +7,7 @@ const {
   getStoreState,
   getTomorrowAtNine,
   storeLocalDateTimeToDate,
+  toValidDate,
   toStoreLocalDateTimeInput
 } = require("../store-status.js");
 
@@ -94,5 +95,35 @@ test("datetime-local é convertido no fuso America/Santarem", () => {
   assert.equal(
     getTomorrowAtNine(new Date("2026-08-06T00:00:00.000Z")).toISOString(),
     returnAtNine
+  );
+});
+
+test("return_time ausente ou inválido mantém o datetime-local vazio", () => {
+  const emptyValues = [null, undefined, "", "   ", 0, false, "inválido"];
+
+  emptyValues.forEach(value => {
+    assert.equal(toValidDate(value), null);
+    assert.equal(toStoreLocalDateTimeInput(value), "");
+  });
+});
+
+test("limpar o horário persiste return_time como null sem alterar a pausa", () => {
+  assert.deepEqual(
+    buildStoreSettingsUpdate(STORE_MODES.PAUSED, "", "Mensagem"),
+    {
+      is_paused: true,
+      store_mode: STORE_MODES.PAUSED,
+      return_time: null,
+      pause_message: "Mensagem"
+    }
+  );
+
+  assert.equal(
+    getStoreState({
+      isPaused: true,
+      mode: STORE_MODES.PAUSED,
+      returnTime: null
+    }),
+    STORE_MODES.PAUSED
   );
 });
