@@ -451,7 +451,7 @@ h2 { font-size: clamp(32px, 4vw, 48px); }
 
 .checkout-form { display: grid; gap: 17px; }
 fieldset { margin: 0; padding: 0; border: 0; }
-legend, .checkout-form > label {
+legend, .checkout-form > label, #address-fields:not([hidden]) {
   display: grid;
   gap: 8px;
   font-weight: 700;
