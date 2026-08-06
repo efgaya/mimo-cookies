@@ -264,14 +264,14 @@ function getClosedDetails(now = new Date()) {
     returnText = isSameStoreDate(returnDate, now)
       ? `Abrimos hoje às ${returnHour}.`
       : formattedReturnTime.startsWith("amanhã")
-        ? `Abrimos ${formattedReturnTime}.`
+        ? `Amanhã tem mais cookies quentinhos a partir das ${returnHour}.`
         : `Retornamos em ${formattedReturnTime}.`;
   }
 
   return {
     formattedReturnTime,
     returnText,
-    title: `${STORE_NOTICE_ICON} Loja fechada`,
+    title: `${STORE_NOTICE_ICON} Por hoje, encerramos!`,
     buttonText: formattedReturnTime
       ? `Pedidos fechados até ${formattedReturnTime}`
       : "Pedidos fechados"
@@ -329,9 +329,10 @@ function renderStoreSettings() {
     const { title, returnText: closedReturnText } = getClosedDetails();
 
     storePauseTitle.textContent = title;
-    storePauseReturn.textContent = closedReturnText;
-    storePauseReturn.hidden = !closedReturnText;
-    storePauseMessage.textContent = CLOSED_STORE_MESSAGE;
+    storePauseReturn.textContent = "";
+    storePauseReturn.hidden = true;
+    storePauseMessage.textContent = closedReturnText;
+    storePauseMessage.hidden = !closedReturnText;
     cartPauseTitle.textContent = title;
     cartPauseMessage.textContent = [closedReturnText, CLOSED_STORE_MESSAGE]
       .filter(Boolean)
@@ -344,6 +345,7 @@ function renderStoreSettings() {
   storePauseReturn.textContent = returnText;
   storePauseReturn.hidden = !returnText;
   storePauseMessage.textContent = message;
+  storePauseMessage.hidden = false;
   cartPauseTitle.textContent = `${STORE_NOTICE_ICON} Atendimento em pausa`;
   cartPauseMessage.textContent = [returnText, message]
     .filter(Boolean)
@@ -1077,9 +1079,9 @@ form.addEventListener("submit", async event => {
   const storeState = getStoreState();
 
   if (storeState === STORE_MODES.CLOSED_TODAY) {
-    const { title } = getClosedDetails();
+    const { title, returnText } = getClosedDetails();
 
-    alert(`${title}\n\n${CLOSED_STORE_MESSAGE}`);
+    alert(`${title}\n\n${returnText}\n\n${CLOSED_STORE_MESSAGE}`);
     return;
   }
 
