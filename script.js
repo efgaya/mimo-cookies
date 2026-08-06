@@ -2,6 +2,13 @@ const BRL = new Intl.NumberFormat("pt-BR", {
   style: "currency",
   currency: "BRL"
 });
+const {
+  STORE_MODES,
+  STORE_TIME_ZONE,
+  getStoreDateTimeParts,
+  getStoreState: resolveStoreState,
+  normalizeStoreMode
+} = MimoStoreStatus;
 
 const cart = new Map();
 let PRODUCTS = [];
@@ -14,9 +21,11 @@ let cartConfirmationTimeout = null;
 let cartConfirmationFrame = null;
 let storeSettings = {
   isPaused: false,
+  mode: STORE_MODES.OPEN,
   returnTime: null,
   pauseMessage: ""
 };
+let storeStateTimer = null;
 
 const TURNSTILE_ACTION = "create_order";
 const CART_SWIPE_CLOSE_THRESHOLD = 80;
@@ -107,11 +116,16 @@ const DEFAULT_PAUSE_MESSAGE =
 const CLOSED_STORE_MESSAGE =
   "Você pode montar seu pedido normalmente e deixá-lo no carrinho, mas o envio ficará disponível somente quando a loja reabrir.";
 
-function isSameLocalDate(firstDate, secondDate) {
-  return (
-    firstDate.getFullYear() === secondDate.getFullYear() &&
-    firstDate.getMonth() === secondDate.getMonth() &&
-    firstDate.getDate() === secondDate.getDate()
+function isSameStoreDate(firstDate, secondDate) {
+  const firstParts = getStoreDateTimeParts(firstDate);
+  const secondParts = getStoreDateTimeParts(secondDate);
+
+  return Boolean(
+    firstParts &&
+    secondParts &&
+    firstParts.year === secondParts.year &&
+    firstParts.month === secondParts.month &&
+    firstParts.day === secondParts.day
   );
 }
 
@@ -188,8 +202,11 @@ function buildWhatsAppMessage({
 }
 
 function formatLocalHour(date) {
-  const hours = date.getHours();
-  const minutes = date.getMinutes();
+  const parts = getStoreDateTimeParts(date);
+
+  if (!parts) return "";
+
+  const { hour: hours, minute: minutes } = parts;
 
   return minutes === 0
     ? `${hours}h`
@@ -210,22 +227,26 @@ function formatReturnTime(value, now = new Date()) {
 
   const formattedHour = formatLocalHour(date);
 
-  if (isSameLocalDate(date, now)) {
+  if (isSameStoreDate(date, now)) {
     return formattedHour;
   }
 
-  const tomorrow = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1
-  );
+  const nowParts = getStoreDateTimeParts(now);
+  const tomorrow = nowParts && new Date(Date.UTC(
+    nowParts.year,
+    nowParts.month - 1,
+    nowParts.day + 1,
+    12
+  ));
 
-  if (isSameLocalDate(date, tomorrow)) {
+  if (tomorrow && isSameStoreDate(date, tomorrow)) {
     return `amanhã às ${formattedHour}`;
   }
 
-  const includeYear = date.getFullYear() !== now.getFullYear();
+  const dateParts = getStoreDateTimeParts(date);
+  const includeYear = dateParts.year !== nowParts.year;
   const formattedDate = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: STORE_TIME_ZONE,
     day: "numeric",
     month: "long",
     ...(includeYear ? { year: "numeric" } : {})
@@ -235,33 +256,30 @@ function formatReturnTime(value, now = new Date()) {
 }
 
 function getStoreState(now = new Date()) {
-  if (storeSettings.isPaused !== true) return "open";
-
-  const returnDate = new Date(storeSettings.returnTime);
-
-  if (Number.isNaN(returnDate.getTime())) return "paused";
-
-  const today = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate()
-  );
-  const returnDay = new Date(
-    returnDate.getFullYear(),
-    returnDate.getMonth(),
-    returnDate.getDate()
-  );
-
-  return returnDay > today ? "closed" : "paused";
+  return resolveStoreState(storeSettings, now);
 }
 
-function getClosedDetails() {
+function getClosedDetails(now = new Date()) {
+  const returnDate = new Date(storeSettings.returnTime);
   const formattedReturnTime = formatReturnTime(storeSettings.returnTime);
+  const returnHour = formatLocalHour(returnDate);
+  let returnText = "";
+
+  if (formattedReturnTime) {
+    returnText = isSameStoreDate(returnDate, now)
+      ? `Abrimos hoje às ${returnHour}.`
+      : formattedReturnTime.startsWith("amanhã")
+        ? `Abrimos ${formattedReturnTime}.`
+        : `Retornamos em ${formattedReturnTime}.`;
+  }
 
   return {
     formattedReturnTime,
-    title: `${STORE_NOTICE_ICON} Loja fechada! Retornamos ${formattedReturnTime}!`,
-    buttonText: `Pedidos fechados até ${formattedReturnTime}`
+    returnText,
+    title: `${STORE_NOTICE_ICON} Loja fechada`,
+    buttonText: formattedReturnTime
+      ? `Pedidos fechados até ${formattedReturnTime}`
+      : "Pedidos fechados"
   };
 }
 
@@ -280,26 +298,49 @@ function getPauseDetails() {
 
 function renderStoreSettings() {
   const storeState = getStoreState();
-  const isPaused = storeState !== "open";
+  const isPaused = storeState !== STORE_MODES.OPEN;
   const { message, returnText } = getPauseDetails();
+
+  if (storeStateTimer !== null) {
+    window.clearTimeout(storeStateTimer);
+    storeStateTimer = null;
+  }
 
   storePauseBanner.hidden = !isPaused;
   cartPauseNotice.hidden = !isPaused;
 
   if (!isPaused) {
+    storeSettings.isPaused = false;
+    storeSettings.mode = STORE_MODES.OPEN;
+    storeSettings.returnTime = null;
     refreshWhatsappButton();
     return;
   }
 
-  if (storeState === "closed") {
-    const { title } = getClosedDetails();
+  const returnDate = new Date(storeSettings.returnTime);
+
+  if (!Number.isNaN(returnDate.getTime())) {
+    const delay = returnDate.getTime() - Date.now();
+
+    if (delay > 0) {
+      storeStateTimer = window.setTimeout(
+        renderStoreSettings,
+        Math.min(delay + 50, 2_147_483_647)
+      );
+    }
+  }
+
+  if (storeState === STORE_MODES.CLOSED_TODAY) {
+    const { title, returnText: closedReturnText } = getClosedDetails();
 
     storePauseTitle.textContent = title;
-    storePauseReturn.textContent = "";
-    storePauseReturn.hidden = true;
+    storePauseReturn.textContent = closedReturnText;
+    storePauseReturn.hidden = !closedReturnText;
     storePauseMessage.textContent = CLOSED_STORE_MESSAGE;
     cartPauseTitle.textContent = title;
-    cartPauseMessage.textContent = CLOSED_STORE_MESSAGE;
+    cartPauseMessage.textContent = [closedReturnText, CLOSED_STORE_MESSAGE]
+      .filter(Boolean)
+      .join(" ");
     refreshWhatsappButton();
     return;
   }
@@ -319,7 +360,7 @@ async function loadStoreSettings() {
   try {
     const { data, error } = await supabaseClient
       .from("store_settings")
-      .select("is_paused, return_time, pause_message")
+      .select("is_paused, store_mode, return_time, pause_message")
       .eq("id", 1)
       .maybeSingle();
 
@@ -329,6 +370,7 @@ async function loadStoreSettings() {
 
     storeSettings = {
       isPaused: data.is_paused === true,
+      mode: normalizeStoreMode(data.store_mode, data.is_paused === true),
       returnTime: data.return_time || null,
       pauseMessage: String(data.pause_message || "").trim()
     };
@@ -552,7 +594,7 @@ function refreshWhatsappButton() {
     return;
   }
 
-  if (getStoreState() === "closed") {
+  if (getStoreState() === STORE_MODES.CLOSED_TODAY) {
     const { buttonText } = getClosedDetails();
 
     whatsappButton.disabled = true;
@@ -1039,14 +1081,14 @@ form.addEventListener("submit", async event => {
 
   const storeState = getStoreState();
 
-  if (storeState === "closed") {
+  if (storeState === STORE_MODES.CLOSED_TODAY) {
     const { title } = getClosedDetails();
 
     alert(`${title}\n\n${CLOSED_STORE_MESSAGE}`);
     return;
   }
 
-  if (storeState === "paused") {
+  if (storeState === STORE_MODES.PAUSED) {
     const { message, returnText } = getPauseDetails();
     const confirmed = window.confirm([
       "🍪 Nosso atendimento está em pausa neste momento.",
